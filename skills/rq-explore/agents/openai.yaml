@@ -1,0 +1,7 @@
+interface:
+  display_name: "RQ-Explore"
+  short_description: "Brainstorm with personas, then crystallize ideas"
+  default_prompt: "Use $rq-explore to brainstorm with orthogonal personas and turn the strongest seeds into grounded research idea cards."
+
+policy:
+  allow_implicit_invocation: true

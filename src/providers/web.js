@@ -233,7 +233,7 @@ async function fetchHtmlDocument(url, options = {}) {
     method: "GET",
     headers: {
       Accept: "text/html,application/xhtml+xml",
-      "User-Agent": options.userAgent || "research-space-explorer/0.1 web-metadata",
+      "User-Agent": options.userAgent || "research-idea-explorer/0.1 web-metadata",
       ...(options.headers || {})
     },
     signal: options.signal || AbortSignal.timeout(options.timeoutMs || 15000)
@@ -269,4 +269,3 @@ export async function searchWebMetadata(query, options = {}) {
 }
 
 export { normalizeWebDocument };
-

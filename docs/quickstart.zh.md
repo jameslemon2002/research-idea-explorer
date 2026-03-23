@@ -1,4 +1,4 @@
-# Research Space Explorer 快速上手
+# RQ-Explore 快速上手
 
 [项目首页](../README.md) | [中文说明](./README.zh.md) | [English Quick Start](./quickstart.en.md)
 
@@ -82,7 +82,7 @@ npm run cli -- ideas --query "urban heat planning" --search-strategy graph
 重启 Codex 后，可以直接说：
 
 ```text
-用 $research-space-explorer 围绕 “urban heat adaptation” 生成一轮研究方向。
+用 $rq-explore 围绕 “urban heat adaptation” 生成一轮研究方向。
 先检索相关文献，再给我 brainstorm seeds，最后收束成 4 张 research cards。
 ```
 

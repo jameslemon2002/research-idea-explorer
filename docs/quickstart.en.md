@@ -1,4 +1,4 @@
-# Research Space Explorer Quick Start
+# RQ-Explore Quick Start
 
 [Project Home](../README.md) | [English Docs](./README.en.md) | [中文快速上手](./quickstart.zh.md)
 
@@ -82,7 +82,7 @@ npm run cli -- ideas --query "urban heat planning" --search-strategy graph
 After restarting Codex, you can say:
 
 ```text
-Use $research-space-explorer to generate research directions around “urban heat adaptation”.
+Use $rq-explore to generate research directions around “urban heat adaptation”.
 Search relevant literature first, then give me brainstorm seeds, and finally crystallize them into four research cards.
 ```
 

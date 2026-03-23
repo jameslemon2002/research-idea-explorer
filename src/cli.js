@@ -161,7 +161,7 @@ function formatIdeaMarkdown(idea) {
 
 function formatIdeasMarkdown(result, memoryPath) {
   const lines = [
-    "# Research Space Explorer",
+    "# RQ-Explore",
     "",
     `Query: ${result.query}`,
     `Providers: ${result.providers.join(", ")}`,

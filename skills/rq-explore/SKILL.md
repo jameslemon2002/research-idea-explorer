@@ -1,9 +1,9 @@
 ---
-name: research-space-explorer
+name: rq-explore
 description: Use when the user wants cross-disciplinary research ideas generated as concise research cards with Title, Abstract, Design, Distinctiveness, and Significance rather than one-shot prompting.
 ---
 
-# Research Space Explorer Skill
+# RQ-Explore Skill
 
 Use this skill when the task is to generate, refine, or compare research ideas across disciplines.
 

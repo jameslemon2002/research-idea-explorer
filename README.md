@@ -1,6 +1,6 @@
 <div align="center">
 
-# Research Space Explorer
+# RQ-Explore
 
 ### 把研究想题从一次性 prompt，变成文献驱动、可记忆、可迭代的探索引擎。
 
@@ -21,7 +21,7 @@
 
 ## 中文简介
 
-`Research Space Explorer` 不是一个“帮你随便想几个题目”的 prompt 模板，而是一条更稳定的研究生成主线：
+`RQ-Explore` 是一个面向研究方向生成与迭代推进的工具。它把研究想题组织成一条更稳定的工作流：
 
 1. 先检索公开文献或读取本地文献库
 2. 再用一组彼此正交的 persona 做脑暴
@@ -31,6 +31,9 @@
 
 使用原则：
 除了 `graph`、`feedback`、输出说明这类纯功能调用外，研究生成相关调用会先检索文献，再进入脑暴与排序。
+
+建议的 GitHub 仓库名：
+`research-idea-explorer`
 
 ## 核心能力
 
@@ -42,7 +45,7 @@
 - 用 memory graph 记住已探索方向和用户反馈
 - 导出 `Mermaid`、静态 `SVG`、交互式 `HTML network` 图
 - 作为 Codex skill 使用：
-  [`skills/research-space-explorer/SKILL.md`](skills/research-space-explorer/SKILL.md)
+  [`skills/rq-explore/SKILL.md`](skills/rq-explore/SKILL.md)
 
 ## 功能地图
 
@@ -182,7 +185,7 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --out
 
 ## English Snapshot
 
-`Research Space Explorer` turns research ideation into a pipeline of:
+`RQ-Explore` turns research ideation into a pipeline of:
 
 1. literature retrieval
 2. persona-driven brainstorming

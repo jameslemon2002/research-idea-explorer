@@ -8,7 +8,7 @@ function wait(ms) {
 
 function buildDefaultUserAgent(options = {}) {
   const email = options.email || process.env.ARXIV_CONTACT_EMAIL || "contact@example.com";
-  return options.userAgent || `research-space-explorer/0.1 (${email})`;
+  return options.userAgent || `research-idea-explorer/0.1 (${email})`;
 }
 
 function extractFirst(xml, pattern) {

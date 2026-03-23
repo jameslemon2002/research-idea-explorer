@@ -1,11 +1,11 @@
-# Research Space Explorer 中文说明
+# RQ-Explore 中文说明
 
 [![中文](https://img.shields.io/badge/说明-中文-0F766E)](./README.zh.md)
 [![English](https://img.shields.io/badge/Docs-English-1F2937)](./README.en.md)
 
 ## 项目简介
 
-`Research Space Explorer` 是一个面向研究想题与选题推进的工具。  
+`RQ-Explore` 是一个面向研究想题与选题推进的工具。  
 它把“查文献、发散、收束、去重、继续推进”放进同一条工作流里，让研究生成不再依赖一次性 prompt。
 
 ## 适合什么场景
@@ -86,6 +86,6 @@ npm run cli -- ideas --query "urban heat planning"
 ## Codex / Skill 示例
 
 ```text
-用 $research-space-explorer 围绕 “urban heat adaptation” 生成一轮研究方向。
+用 $rq-explore 围绕 “urban heat adaptation” 生成一轮研究方向。
 先检索相关文献，再给我 brainstorm seeds，最后收束成 4 张 research cards。
 ```

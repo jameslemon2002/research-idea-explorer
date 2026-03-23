@@ -1,11 +1,11 @@
-# Research Space Explorer Docs
+# RQ-Explore Docs
 
 [![中文](https://img.shields.io/badge/说明-中文-0F766E)](./README.zh.md)
 [![English](https://img.shields.io/badge/Docs-English-1F2937)](./README.en.md)
 
 ## Overview
 
-`Research Space Explorer` is a tool for research ideation and iterative direction-finding.  
+`RQ-Explore` is a tool for research ideation and iterative direction-finding.  
 It combines literature retrieval, persona-based brainstorming, structured idea cards, critique, and memory into one workflow.
 
 ## Good fit for
@@ -86,6 +86,6 @@ npm run cli -- ideas --query "urban heat planning"
 ## Codex / Skill example
 
 ```text
-Use $research-space-explorer to generate research directions around “urban heat adaptation”.
+Use $rq-explore to generate research directions around “urban heat adaptation”.
 Search relevant literature first, then give me brainstorm seeds, and finally crystallize them into four research cards.
 ```
