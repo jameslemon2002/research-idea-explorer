@@ -8,6 +8,8 @@
 `RQ-Explore` is a tool for research ideation and iterative direction-finding.  
 It combines literature retrieval, persona-based brainstorming, structured idea cards, critique, and memory into one workflow.
 
+It can run as a local `CLI`, or plug into agent CLI workflows such as `Codex` and `Claude Code`.
+
 ## Good fit for
 
 - generating grounded research directions from a topic

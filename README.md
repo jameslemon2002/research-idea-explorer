@@ -8,7 +8,7 @@
 
 ![Status](https://img.shields.io/badge/Status-Release%20Ready-0F766E)
 ![License](https://img.shields.io/badge/License-MIT-65A30D)
-![Interface](https://img.shields.io/badge/Interface-CLI%20%2B%20Codex%20Skill-1F2937)
+![Interface](https://img.shields.io/badge/Interface-CLI%20%2B%20Codex%20%2B%20Claude%20Code-1F2937)
 ![Storage](https://img.shields.io/badge/Storage-JSON%20Memory%20Graph-2563EB)
 ![Retrieval](https://img.shields.io/badge/Retrieval-Hybrid%20Search-F59E0B)
 ![Graph](https://img.shields.io/badge/Graph-SVG%20%2B%20HTML%20Network-7C3AED)
@@ -32,8 +32,10 @@
 使用原则：
 除了 `graph`、`feedback`、输出说明这类纯功能调用外，研究生成相关调用会先检索文献，再进入脑暴与排序。
 
-建议的 GitHub 仓库名：
-`research-idea-explorer`
+适配入口：
+- `CLI`
+- `Codex` skill
+- `Claude Code` command
 
 ## 核心能力
 
@@ -46,6 +48,8 @@
 - 导出 `Mermaid`、静态 `SVG`、交互式 `HTML network` 图
 - 作为 Codex skill 使用：
   [`skills/rq-explore/SKILL.md`](skills/rq-explore/SKILL.md)
+- 作为 Claude Code command 使用：
+  [`.claude/commands/rq-explore.md`](.claude/commands/rq-explore.md)
 
 ## 功能地图
 
@@ -58,13 +62,44 @@
 | `Frontier Graph` | 记住已探索 neighborhood 和文献关系 |
 | `Feedback Loop` | 让用户 accept / reject 后继续推进 |
 
-## 快速开始
+## 安装与接入
 
-安装依赖：
+### 1. 本地 CLI
 
 ```bash
 npm install
+npm run cli -- ideas --query "urban heat planning"
 ```
+
+### 2. Codex
+
+把 skill 目录复制到 `~/.codex/skills/`，然后重启 Codex：
+
+```bash
+cp -R skills/rq-explore ~/.codex/skills/
+```
+
+之后可以直接调用：
+
+```text
+用 $rq-explore 围绕 “urban heat adaptation” 生成一轮研究方向。
+```
+
+### 3. Claude Code
+
+把命令文件放进目标项目的 `.claude/commands/`：
+
+```bash
+cp .claude/commands/rq-explore.md /path/to/your-project/.claude/commands/
+```
+
+之后在 Claude Code 中调用：
+
+```text
+/rq-explore
+```
+
+## 快速开始
 
 运行 demo：
 
@@ -108,7 +143,7 @@ npm run cli -- ideas --query "urban heat planning" --providers local --local-lib
 npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id idea-1 --decision accepted --note "strong direction"
 ```
 
-完整上手流程见：
+更完整的上手流程见：
 - [中文快速上手](docs/quickstart.zh.md)
 - [English Quick Start](docs/quickstart.en.md)
 
