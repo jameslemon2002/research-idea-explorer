@@ -1,0 +1,12 @@
+{
+  "name": "research-space-explorer",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "cli": "node src/cli.js",
+    "demo": "node src/demo.js",
+    "demo:live": "node src/live-demo.js",
+    "test": "node --test"
+  }
+}

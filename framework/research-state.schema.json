@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/research-state.schema.json",
+  "title": "ResearchState",
+  "type": "object",
+  "required": [
+    "focus",
+    "constraints",
+    "visitedSignatures",
+    "acceptedIdeas",
+    "rejectedIdeas",
+    "frontier",
+    "history"
+  ],
+  "properties": {
+    "focus": {
+      "type": "object",
+      "properties": {
+        "domain": {
+          "type": "string"
+        },
+        "objects": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "preferredPuzzles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preferredClaims": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidenceKinds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "personaIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "keywords": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "contrasts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "axis": {
+            "type": "string"
+          },
+          "comparison": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "population": {
+          "type": "string"
+        },
+        "place": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string"
+        },
+        "scale": {
+          "type": "string"
+        }
+      }
+    },
+    "stakes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "visitedSignatures": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "acceptedIdeas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rejectedIdeas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "frontier": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "ideaId": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected",
+              "visited"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

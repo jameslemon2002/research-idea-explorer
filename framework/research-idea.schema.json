@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/research-idea.schema.json",
+  "title": "ResearchIdea",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "object",
+    "puzzle",
+    "claim",
+    "contrast",
+    "evidence",
+    "scope",
+    "stakes",
+    "rationale"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "object": {
+      "type": "string"
+    },
+    "puzzle": {
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "contrast": {
+      "type": "object",
+      "required": [
+        "axis",
+        "comparison"
+      ],
+      "properties": {
+        "axis": {
+          "type": "string"
+        },
+        "comparison": {
+          "type": "string"
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "required": [
+        "kind",
+        "detail"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "detail": {
+          "type": "string"
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "population": {
+          "type": "string"
+        },
+        "place": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string"
+        },
+        "scale": {
+          "type": "string"
+        }
+      }
+    },
+    "stakes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "origin": {
+      "type": "object",
+      "properties": {
+        "seedId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "personaId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "personaLabel": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "noveltyAngle": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sourcePaperIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "critique": {
+      "type": "object",
+      "properties": {
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "penalty": {
+          "type": "number"
+        },
+        "summary": {
+          "type": "string"
+        }
+      }
+    },
+    "scores": {
+      "type": "object",
+      "properties": {
+        "novelty": {
+          "type": "number"
+        },
+        "diversity": {
+          "type": "number"
+        },
+        "feasibility": {
+          "type": "number"
+        },
+        "userFit": {
+          "type": "number"
+        },
+        "creativity": {
+          "type": "number"
+        },
+        "critiquePenalty": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
