@@ -19,6 +19,32 @@ function limitFromOptions(limitOrOptions) {
   return typeof limitOrOptions === "number" ? limitOrOptions : limitOrOptions?.limit ?? 5;
 }
 
+function normalizeQuerySpec(spec) {
+  if (!spec) {
+    return null;
+  }
+
+  if (typeof spec === "string") {
+    return {
+      label: spec,
+      query: spec,
+      weight: 1
+    };
+  }
+
+  const query = String(spec.query || spec.label || "").trim();
+  if (!query) {
+    return null;
+  }
+
+  return {
+    label: spec.label || query,
+    query,
+    weight: Number(spec.weight || 1),
+    strategy: spec.strategy
+  };
+}
+
 export function createPaperNode(metadata) {
   const text = paperText(metadata);
   return {
@@ -223,6 +249,101 @@ export function searchLiterature(indexInput, query, limitOrOptions = 5) {
     ...options,
     limit
   });
+}
+
+export function traceLiteratureQueries(indexInput, querySpecs, options = {}) {
+  const index = ensureIndex(indexInput);
+  const perQueryLimit = options.perQueryLimit || options.limit || 5;
+  const limit = options.limit || Math.max(perQueryLimit, 5);
+  const strategy = options.strategy || index.options.defaultStrategy || "hybrid";
+  const seenQueries = new Set();
+  const specs = (querySpecs || [])
+    .map(normalizeQuerySpec)
+    .filter(Boolean)
+    .filter((spec) => {
+      const key = `${spec.strategy || strategy}|${normalizeText(spec.query)}`;
+      if (seenQueries.has(key)) {
+        return false;
+      }
+      seenQueries.add(key);
+      return true;
+    });
+
+  if (!specs.length) {
+    return {
+      queries: [],
+      mergedHits: [],
+      totalWeight: 0,
+      uniquePaperCount: 0
+    };
+  }
+
+  const totalWeight = specs.reduce((sum, spec) => sum + spec.weight, 0) || 1;
+  const merged = new Map();
+  const queries = specs.map((spec) => {
+    const hits = searchLiterature(index, spec.query, {
+      ...options,
+      limit: perQueryLimit,
+      strategy: spec.strategy || strategy
+    });
+
+    for (const hit of hits) {
+      const current = merged.get(hit.paper.id) || {
+        paper: hit.paper,
+        score: 0,
+        weightedScore: 0,
+        maxScore: 0,
+        breadth: 0,
+        appearances: 0,
+        components: {
+          lexical: 0,
+          embedding: 0,
+          graph: 0
+        },
+        matchedQueries: []
+      };
+
+      current.paper = hit.paper;
+      current.weightedScore += hit.score * spec.weight;
+      current.maxScore = Math.max(current.maxScore, hit.score);
+      current.appearances += 1;
+      current.components.lexical = Math.max(current.components.lexical, hit.components?.lexical || 0);
+      current.components.embedding = Math.max(current.components.embedding, hit.components?.embedding || 0);
+      current.components.graph = Math.max(current.components.graph, hit.components?.graph || 0);
+      current.matchedQueries.push({
+        label: spec.label,
+        query: spec.query,
+        score: Number(hit.score.toFixed(3))
+      });
+      merged.set(hit.paper.id, current);
+    }
+
+    return {
+      ...spec,
+      hits
+    };
+  });
+
+  const mergedHits = [...merged.values()]
+    .map((hit) => {
+      const normalizedWeightedScore = hit.weightedScore / totalWeight;
+      const breadth = specs.length ? hit.appearances / specs.length : 0;
+      return {
+        ...hit,
+        weightedScore: Number(normalizedWeightedScore.toFixed(3)),
+        breadth: Number(breadth.toFixed(3)),
+        score: Number((0.72 * normalizedWeightedScore + 0.28 * breadth).toFixed(3))
+      };
+    })
+    .sort((left, right) => right.score - left.score)
+    .slice(0, limit);
+
+  return {
+    queries,
+    mergedHits,
+    totalWeight: Number(totalWeight.toFixed(3)),
+    uniquePaperCount: merged.size
+  };
 }
 
 export function scoreIdeaAgainstLiterature(ideaText, indexInput, options = {}) {

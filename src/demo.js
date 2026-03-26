@@ -13,6 +13,7 @@ const memoryGraph = await loadMemoryGraph(memoryPath);
 const pipeline = runIdeaPipeline(sampleSeed, literatureIndex, {
   limit: 48,
   frontierLimit: 6,
+  rounds: 2,
   query: sampleSeed.focus.objects.join(" "),
   memoryGraph
 });
@@ -33,13 +34,34 @@ if (topPaper) {
   }
 }
 
-console.log("\nBrainstorm seeds:\n");
-for (const seed of pipeline.brainstormSeeds) {
-  console.log(`${seed.persona.label}: ${seed.questionStem}`);
-  console.log(`  novelty angle: ${seed.noveltyAngle}`);
+console.log("\nResearch moves:\n");
+for (const seed of pipeline.rounds.initial.brainstormSeeds) {
+  console.log(`${seed.questionStem}`);
+  console.log(`  research move: ${seed.noveltyAngle}`);
   console.log(`  pivot: ${seed.pivot}`);
   console.log("");
 }
+
+if (pipeline.rounds.mutation.seeds.length) {
+  console.log("Second-pass literature branches:\n");
+  for (const seed of pipeline.rounds.mutation.seeds) {
+    console.log(`${seed.questionStem}`);
+    console.log(`  research move: ${seed.noveltyAngle}`);
+    console.log(`  pivot: ${seed.pivot}`);
+    console.log("");
+  }
+}
+
+console.log("Literature loop summary:\n");
+console.log(
+  `- initial map: ${pipeline.literatureMap.queryCount} queries -> ${pipeline.literatureMap.neighborhoods.length} neighborhoods`
+);
+console.log(`- search depth: ${pipeline.effectiveRounds} rounds`);
+console.log(`- first focus: ${pipeline.rounds.firstFocus.frontier.length} families retained`);
+if (pipeline.rounds.mutation.traces.length) {
+  console.log(`- mutation pass: ${pipeline.rounds.mutation.traces.length} targeted probes`);
+}
+console.log("");
 
 console.log("Frontier idea cards after critique and ranking:\n");
 for (const idea of pipeline.frontier) {

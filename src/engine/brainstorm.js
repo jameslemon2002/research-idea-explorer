@@ -29,21 +29,54 @@ function selectAnchorPaper(object, state, papers) {
   return searchLiterature(papers, query, 1)[0]?.paper || null;
 }
 
+function selectLiteratureContexts(state, papers, options = {}) {
+  const neighborhoods = options.literatureMap?.neighborhoods || [];
+  if (neighborhoods.length) {
+    return neighborhoods;
+  }
+
+  const objects = state.focus?.objects || [];
+  return objects
+    .map((object) => {
+      const anchorPaper = selectAnchorPaper(object, state, papers);
+      if (!anchorPaper) {
+        return null;
+      }
+
+      return {
+        id: `anchor:${anchorPaper.id}`,
+        anchorPaperId: anchorPaper.id,
+        anchorTitle: anchorPaper.title,
+        paperIds: [anchorPaper.id],
+        focusTerms: anchorPaper.keywords || [],
+        queryRefs: [
+          {
+            label: "anchor",
+            query: `${object} ${state.constraints?.keywords?.join(" ") || ""}`.trim(),
+            weight: 1
+          }
+        ]
+      };
+    })
+    .filter(Boolean);
+}
+
 export function brainstormSeeds(state, papers, options = {}) {
   const objects = state.focus?.objects || [];
   const personas = resolvePersonas(options.personaIds || state.constraints?.personaIds || []);
   const contrasts = pickContrasts(state);
+  const literatureContexts = selectLiteratureContexts(state, papers, options);
   const seeds = [];
 
   for (const object of objects) {
-    const anchorPaper = selectAnchorPaper(object, state, papers);
-
-    for (const persona of personas) {
+    for (const [personaIndex, persona] of personas.entries()) {
+      const literatureContext =
+        literatureContexts[(seeds.length + personaIndex) % Math.max(literatureContexts.length, 1)] || null;
       const contrast = contrasts[seeds.length % contrasts.length];
       const seeded = persona.buildSeed({
         object,
         contrast,
-        anchorTitle: anchorPaper?.title || null
+        anchorTitle: literatureContext?.anchorTitle || null
       });
 
       seeds.push(
@@ -58,8 +91,12 @@ export function brainstormSeeds(state, papers, options = {}) {
           suggestedClaims: persona.preferredClaims,
           contrastSuggestions: contrasts,
           evidenceHints: filterEvidenceBias(persona, state),
-          sourcePaperIds: anchorPaper ? [anchorPaper.id] : [],
-          tags: [state.focus?.domain, object, persona.id]
+          sourcePaperIds: literatureContext?.paperIds?.slice(0, 3) || [],
+          literatureQueries: literatureContext?.queryRefs || [],
+          focusTerms: literatureContext?.focusTerms || [],
+          round: "initial",
+          stage: "diverge",
+          tags: [state.focus?.domain, object, persona.id, literatureContext?.id]
         })
       );
     }
@@ -67,4 +104,3 @@ export function brainstormSeeds(state, papers, options = {}) {
 
   return seeds.slice(0, options.limit || 36);
 }
-

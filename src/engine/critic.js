@@ -1,8 +1,7 @@
 import { ideaSimilarity } from "./dedupe.js";
-import { ideaToMatchText } from "../schema.js";
-import { scoreIdeaAgainstLiterature } from "../retrieval/literature.js";
+import { probeIdeaLiterature } from "./literature-probe.js";
 
-function critiqueIdea(idea, ideas, papers) {
+function critiqueIdea(idea, ideas, papers, context = {}) {
   const flags = [];
   let penalty = 0;
 
@@ -30,10 +29,26 @@ function critiqueIdea(idea, ideas, papers) {
     penalty += 0.14;
   }
 
-  const literatureMatch = scoreIdeaAgainstLiterature(ideaToMatchText(idea), papers);
-  if (literatureMatch.overlap >= 0.38) {
+  const literatureTrace = idea.literatureTrace || probeIdeaLiterature(idea, papers, context);
+  if (literatureTrace.crowdedness >= 0.34) {
     flags.push("crowded_literature");
     penalty += 0.16;
+  }
+
+  if (literatureTrace.grounding <= 0.34 || literatureTrace.distinctPaperCount < 2) {
+    flags.push("thin_literature_bridge");
+    penalty += 0.1;
+  }
+
+  if (literatureTrace.breadth <= 0.18) {
+    flags.push("single_anchor_dependence");
+    penalty += 0.06;
+  }
+
+  const parentIdea = (context.referenceIdeas || []).find((candidate) => candidate.id === idea.origin?.parentIdeaId);
+  if (parentIdea && ideaSimilarity(idea, parentIdea) >= 0.88) {
+    flags.push("mutation_too_close_to_parent");
+    penalty += 0.1;
   }
 
   return {
@@ -43,14 +58,23 @@ function critiqueIdea(idea, ideas, papers) {
       flags.length === 0
         ? "No major template warning detected."
         : `Main critique: ${flags.join(", ")}.`,
-    nearestPaperId: literatureMatch.nearestPaper?.id || null
+    nearestPaperId: literatureTrace.nearestPaperId || null,
+    literatureBreadth: literatureTrace.breadth
   };
 }
 
 export function critiqueIdeas(ideas, context = {}) {
   const papers = context.papers || [];
-  return ideas.map((idea) => ({
-    ...idea,
-    critique: critiqueIdea(idea, ideas, papers)
-  }));
+  return ideas.map((idea) => {
+    const literatureTrace = idea.literatureTrace || probeIdeaLiterature(idea, papers, context);
+    const preparedIdea = {
+      ...idea,
+      literatureTrace
+    };
+
+    return {
+      ...preparedIdea,
+      critique: critiqueIdea(preparedIdea, ideas, papers, context)
+    };
+  });
 }

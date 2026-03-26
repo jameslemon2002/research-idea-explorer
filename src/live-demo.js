@@ -1,5 +1,6 @@
 import { runIdeaPipeline } from "./engine/pipeline.js";
 import { loadMemoryGraph, saveMemoryGraph } from "./memory/store.js";
+import { buildIdeaCardView } from "./presentation/cards.js";
 import { buildQuerySeed } from "./query-seed.js";
 import { searchLiteratureSources } from "./retrieval/live.js";
 
@@ -38,15 +39,30 @@ async function main() {
 
   const pipeline = runIdeaPipeline(seed, result.index, {
     frontierLimit: 6,
+    rounds: 2,
     query,
-    memoryGraph
+    memoryGraph,
+    searchStrategy: "hybrid"
   });
   const savedPath = await saveMemoryGraph(memoryPath, pipeline.memoryGraph);
 
+  console.log("\nLiterature loop:");
+  console.log(
+    `- initial map: ${pipeline.literatureMap.queryCount} queries -> ${pipeline.literatureMap.neighborhoods.length} neighborhoods`
+  );
+  console.log(`- search depth: ${pipeline.effectiveRounds} rounds`);
+  console.log(`- first focus: ${pipeline.rounds.firstFocus.frontier.length} families retained`);
+  if (pipeline.rounds.mutation.traces.length) {
+    console.log(`- mutation pass: ${pipeline.rounds.mutation.traces.length} targeted literature probes`);
+  }
+
   console.log("\nFrontier ideas:");
   for (const idea of pipeline.frontier) {
-    console.log(`- ${idea.title}`);
-    console.log(`  persona: ${idea.origin.personaLabel}`);
+    const card = buildIdeaCardView(idea, {
+      paperMap: result.index.paperMap
+    });
+    console.log(`- ${card.title}`);
+    console.log(`  abstract: ${card.abstract}`);
     console.log(`  nearest paper: ${idea.scores.nearestPaperId || "none"}`);
   }
 

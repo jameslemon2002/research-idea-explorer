@@ -88,8 +88,13 @@ export function crystallizeSeeds(brainstormSeeds, state, options = {}) {
                   personaId: seed.persona.id,
                   personaLabel: seed.persona.label,
                   noveltyAngle: seed.noveltyAngle,
-                  sourcePaperIds: seed.sourcePaperIds
-                }
+                  sourcePaperIds: seed.sourcePaperIds,
+                  literatureQueries: seed.literatureQueries || [],
+                  focusTerms: seed.focusTerms || [],
+                  parentIdeaId: seed.parentIdeaId || null,
+                  round: seed.round || "initial"
+                },
+                round: seed.round || "initial"
               })
             );
           }

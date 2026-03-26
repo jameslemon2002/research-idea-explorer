@@ -6,7 +6,7 @@
 ## 项目简介
 
 `Research Idea Explorer` 是一个面向研究想题与选题推进的工具。  
-它把“查文献、发散、收束、去重、继续推进”放进同一条工作流里，让研究生成不再依赖一次性 prompt。
+它把“查文献、发散、聚焦、继续推进”放进同一条工作流里，并在需要时升级成两轮深挖，让研究生成不再依赖一次性 prompt。
 
 它既可以直接作为本地 `CLI` 使用，也可以接到 `Codex` 或 `Claude Code` 这样的 agent CLI 工作流中。
 
@@ -20,10 +20,11 @@
 ## 工作流
 
 1. 检索公开文献或读取本地文献库
-2. 用多 persona 做脑暴
-3. 收束成 research cards
-4. 用重复检测、文献重叠和 memory graph 做筛选
-5. 通过 accept / reject 继续探索下一轮
+2. 先做一轮 literature map，找文献簇和相邻 neighborhood
+3. 用几种正交的问题结构做默认单轮发散，再收束成小 frontier
+4. 只有在用户要求深挖或沿 accepted 方向继续推进时，才做第二轮文献 mutation
+5. 用重复检测、文献重叠和 memory graph 做最终筛选
+6. 通过 accept / reject 继续探索下一轮
 
 使用原则：
 除了 `graph`、`feedback`、输出说明这类纯功能调用外，研究生成相关调用默认先检索文献。
@@ -31,10 +32,10 @@
 ## 核心能力
 
 - `Scholar Scout`：文献检索与 grounding
-- `Persona Storm`：多 persona 发散脑暴
-- `Idea Forge`：输出简洁 research cards
+- `Research Moves`：做默认单轮发散，并在需要时升级成 second-pass branching
+- `Idea Forge`：把搜索结果收束成简洁 research cards
 - `Crowd Guard`：过滤近重复和拥挤方向
-- `Frontier Graph`：记录 query、paper、idea、persona 的关系
+- `Frontier Graph`：记录 query、paper、idea 与相关线索的关系
 - `Feedback Loop`：将用户反馈回写到 memory graph
 
 ## 输出内容
@@ -86,5 +87,5 @@ npm run cli -- ideas --query "urban heat planning"
 
 ```text
 用 $research-idea-explorer 围绕 “urban heat adaptation” 生成一轮研究方向。
-先检索相关文献，再给我 brainstorm seeds，最后收束成 4 张 research cards。
+先检索相关文献，先给我一轮强一点的 frontier；如果里面有值得继续的方向，再沿相邻文献做第二轮深挖。
 ```

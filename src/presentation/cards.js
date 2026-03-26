@@ -74,11 +74,9 @@ export function buildIdeaCardView(idea, context = {}) {
     literatureAnchor ? `Use "${literatureAnchor.title}" as the nearest literature anchor, then push it toward the sharper comparison.` : ""
   ]);
   const distinctiveness = compactSentences([
-    idea.origin?.personaLabel && idea.origin?.noveltyAngle
-      ? `The core move comes from ${idea.origin.personaLabel}: ${stripTerminalPunctuation(idea.origin.noveltyAngle)}.`
-      : idea.origin?.personaLabel
-        ? `The core move comes from ${idea.origin.personaLabel}.`
-        : "",
+    idea.origin?.noveltyAngle
+      ? `The differentiating move is to ${lowerPhrase(idea.origin.noveltyAngle)}.`
+      : "",
     literatureAnchor
       ? `It sits close to "${literatureAnchor.title}" in the retrieved literature but shifts attention toward ${idea.contrast.comparison}.`
       : `It foregrounds ${idea.contrast.comparison} instead of another average-case account of ${idea.object}.`,
@@ -112,4 +110,3 @@ export function formatIdeaMarkdown(idea, context = {}) {
     `- Significance: ${card.significance}`
   ].join("\n");
 }
-

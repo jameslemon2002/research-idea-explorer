@@ -2,6 +2,8 @@ import { brainstormSeeds } from "./brainstorm.js";
 import { crystallizeSeeds } from "./crystallize.js";
 import { critiqueIdeas } from "./critic.js";
 import { dedupeIdeas } from "./dedupe.js";
+import { buildLiteratureMap } from "./literature-map.js";
+import { buildMutationRound } from "./mutate.js";
 import { rankIdeas } from "./scoring.js";
 import { createResearchState } from "../schema.js";
 import {
@@ -15,28 +17,33 @@ import {
 
 export function selectFrontierIdeas(rankedIdeas, limit = 6) {
   const selected = [];
-  const usedPersonas = new Set();
+  const usedFamilies = new Set();
   const usedContrasts = new Set();
+  const usedTitles = new Set();
 
   while (selected.length < limit) {
     const next =
       rankedIdeas.find((idea) => {
-        const personaId = idea.origin?.personaId || "unknown";
         return (
           !selected.some((candidate) => candidate.id === idea.id) &&
-          !usedPersonas.has(personaId) &&
-          !usedContrasts.has(idea.contrast.comparison)
+          !usedFamilies.has(idea.familyId || idea.id) &&
+          !usedContrasts.has(idea.contrast.comparison) &&
+          !usedTitles.has(idea.title)
         );
-      }) ||
-      rankedIdeas.find((idea) => {
-        const personaId = idea.origin?.personaId || "unknown";
-        return !selected.some((candidate) => candidate.id === idea.id) && !usedPersonas.has(personaId);
       }) ||
       rankedIdeas.find(
         (idea) =>
           !selected.some((candidate) => candidate.id === idea.id) &&
-          !usedContrasts.has(idea.contrast.comparison)
+          !usedFamilies.has(idea.familyId || idea.id) &&
+          !usedTitles.has(idea.title)
       ) ||
+      rankedIdeas.find(
+        (idea) =>
+          !selected.some((candidate) => candidate.id === idea.id) &&
+          !usedContrasts.has(idea.contrast.comparison) &&
+          !usedTitles.has(idea.title)
+      ) ||
+      rankedIdeas.find((idea) => !selected.some((candidate) => candidate.id === idea.id) && !usedTitles.has(idea.title)) ||
       rankedIdeas.find((idea) => !selected.some((candidate) => candidate.id === idea.id));
 
     if (!next) {
@@ -44,8 +51,9 @@ export function selectFrontierIdeas(rankedIdeas, limit = 6) {
     }
 
     selected.push(next);
-    usedPersonas.add(next.origin?.personaId || "unknown");
+    usedFamilies.add(next.familyId || next.id);
     usedContrasts.add(next.contrast.comparison);
+    usedTitles.add(next.title);
 
     if (selected.length >= limit) {
       continue;
@@ -58,28 +66,101 @@ export function selectFrontierIdeas(rankedIdeas, limit = 6) {
 export function runIdeaPipeline(input, papers, options = {}) {
   const state = createResearchState(input);
   const memoryGraph = options.memoryGraph || createMemoryGraph();
+  const searchStrategy = options.searchStrategy || papers?.options?.defaultStrategy || "hybrid";
   const memoryVisitedIdeas = options.visitedIdeas || collectVisitedIdeas(memoryGraph);
   const memoryAcceptedIdeas = options.acceptedIdeas || collectAcceptedIdeas(memoryGraph);
   const memoryRejectedIdeas = options.rejectedIdeas || collectRejectedIdeas(memoryGraph);
+  const requestedRounds = Number(options.rounds || 0);
+  const effectiveRounds =
+    requestedRounds >= 1 ? Math.min(2, requestedRounds) : memoryAcceptedIdeas.length ? 2 : 1;
   state.visitedSignatures = [...new Set([...state.visitedSignatures, ...collectVisitedSignatures(memoryGraph)])];
   state.acceptedIdeas = [...state.acceptedIdeas, ...memoryAcceptedIdeas];
   state.rejectedIdeas = [...state.rejectedIdeas, ...memoryRejectedIdeas];
   state.history = [...state.history, ...memoryVisitedIdeas];
-  const seeds = brainstormSeeds(state, papers, options);
-  const rawIdeas = crystallizeSeeds(seeds, state, options);
-  const dedupedIdeas = dedupeIdeas(rawIdeas);
-  const critiquedIdeas = critiqueIdeas(dedupedIdeas, {
-    state,
-    papers
+  const literatureMap = buildLiteratureMap(state, papers, {
+    strategy: searchStrategy,
+    limit: options.literatureMapLimit || 8,
+    anchorLimit: options.literatureAnchorLimit || 4,
+    perQueryLimit: options.literaturePerQueryLimit || 4
   });
-  const rankedIdeas = rankIdeas(critiquedIdeas, {
+  const initialSeeds = brainstormSeeds(state, papers, {
+    ...options,
+    literatureMap,
+    limit: options.initialSeedLimit || options.limit || 36
+  });
+  const initialRawIdeas = crystallizeSeeds(initialSeeds, state, {
+    ...options,
+    limit: options.initialIdeaLimit || 96
+  });
+  const initialDedupedIdeas = dedupeIdeas(initialRawIdeas, options.initialDedupeThreshold || 0.72);
+  const initialCritiquedIdeas = critiqueIdeas(initialDedupedIdeas, {
+    state,
+    papers,
+    literatureMap,
+    searchStrategy
+  });
+  const initialRankedIdeas = rankIdeas(initialCritiquedIdeas, {
     state,
     papers,
     visitedIdeas: memoryVisitedIdeas,
     acceptedIdeas: memoryAcceptedIdeas,
-    rejectedIdeas: memoryRejectedIdeas
+    rejectedIdeas: memoryRejectedIdeas,
+    literatureMap,
+    searchStrategy
   });
-  const frontier = selectFrontierIdeas(rankedIdeas, options.frontierLimit || 6);
+  const firstFocus = selectFrontierIdeas(
+    initialRankedIdeas,
+    effectiveRounds >= 2 ? options.intermediateFrontierLimit || 4 : options.frontierLimit || 6
+  );
+  const mutationRound =
+    effectiveRounds >= 2
+      ? buildMutationRound(firstFocus, state, papers, {
+          strategy: searchStrategy,
+          perQueryLimit: options.mutationPerQueryLimit || 4,
+          limit: options.mutationLiteratureLimit || 6,
+          ideaLimit: options.mutationIdeaLimit || firstFocus.length
+        })
+      : {
+          seeds: [],
+          traces: []
+        };
+  const mutationRawIdeas =
+    effectiveRounds >= 2
+      ? crystallizeSeeds(mutationRound.seeds, state, {
+          ...options,
+          limit: options.mutationCardLimit || 96
+        })
+      : [];
+  const combinedRawIdeas = effectiveRounds >= 2 ? [...firstFocus, ...mutationRawIdeas] : initialRawIdeas;
+  const dedupedIdeas =
+    effectiveRounds >= 2
+      ? dedupeIdeas(combinedRawIdeas, options.finalDedupeThreshold || 0.74)
+      : initialDedupedIdeas;
+  const critiquedIdeas =
+    effectiveRounds >= 2
+      ? critiqueIdeas(dedupedIdeas, {
+          state,
+          papers,
+          literatureMap,
+          referenceIdeas: firstFocus,
+          searchStrategy
+        })
+      : initialCritiquedIdeas;
+  const rankedIdeas =
+    effectiveRounds >= 2
+      ? rankIdeas(critiquedIdeas, {
+          state,
+          papers,
+          visitedIdeas: memoryVisitedIdeas,
+          acceptedIdeas: memoryAcceptedIdeas,
+          rejectedIdeas: memoryRejectedIdeas,
+          literatureMap,
+          searchStrategy
+        })
+      : initialRankedIdeas;
+  const frontier = effectiveRounds >= 2 ? selectFrontierIdeas(rankedIdeas, options.frontierLimit || 6) : firstFocus;
+  state.frontier = frontier.map((idea) => idea.id);
+  const allBrainstormSeeds = [...initialSeeds, ...mutationRound.seeds];
 
   recordPipelineRun(
     memoryGraph,
@@ -88,15 +169,54 @@ export function runIdeaPipeline(input, papers, options = {}) {
       state,
       rankedIdeas,
       frontier,
-      paperIndex: papers
+      paperIndex: papers,
+      literatureMap,
+      stages: {
+        initial: {
+          queryCount: literatureMap.queryCount,
+          seedCount: initialSeeds.length,
+          rankedCount: initialRankedIdeas.length
+        },
+        firstFocus: {
+          ideaIds: firstFocus.map((idea) => idea.id)
+        },
+        mutation:
+          effectiveRounds >= 2
+            ? {
+                seedCount: mutationRound.seeds.length,
+                traceCount: mutationRound.traces.length
+              }
+            : null,
+        final: {
+          rankedCount: rankedIdeas.length
+        },
+        rounds: effectiveRounds
+      }
     },
     options.memoryOptions || {}
   );
 
   return {
     state,
-    brainstormSeeds: seeds,
-    rawIdeas,
+    literatureMap,
+    effectiveRounds,
+    rounds: {
+      initial: {
+        brainstormSeeds: initialSeeds,
+        rawIdeas: initialRawIdeas,
+        dedupedIdeas: initialDedupedIdeas,
+        rankedIdeas: initialRankedIdeas
+      },
+      firstFocus: {
+        frontier: firstFocus
+      },
+      mutation: mutationRound,
+      final: {
+        rankedIdeas
+      }
+    },
+    brainstormSeeds: allBrainstormSeeds,
+    rawIdeas: combinedRawIdeas,
     dedupedIdeas,
     rankedIdeas,
     frontier,

@@ -44,6 +44,16 @@ export function buildIdeaSignature(idea) {
   ].join("|");
 }
 
+export function buildIdeaFamilyId(idea) {
+  return buildStableId("family", [
+    idea.object,
+    idea.puzzle?.id,
+    idea.claim?.id,
+    idea.contrast?.axis,
+    idea.scope?.scale
+  ]);
+}
+
 export function ideaToMatchText(idea) {
   return [
     idea.title,
@@ -79,11 +89,16 @@ export function ideaToText(idea) {
 }
 
 export function createBrainstormSeed(input) {
+  const persona = input.persona || {
+    id: input.moveId || "literature_move",
+    label: input.moveLabel || "Literature Move"
+  };
+
   return {
     id:
       input.id ||
       buildStableId("seed", [
-        input.persona.id,
+        persona.id,
         input.object,
         input.hook,
         input.pivot,
@@ -92,8 +107,8 @@ export function createBrainstormSeed(input) {
         ...(input.sourcePaperIds || [])
       ]),
     persona: {
-      id: input.persona.id,
-      label: input.persona.label
+      id: persona.id,
+      label: persona.label
     },
     object: input.object,
     hook: input.hook || "",
@@ -105,6 +120,15 @@ export function createBrainstormSeed(input) {
     contrastSuggestions: input.contrastSuggestions || [],
     evidenceHints: input.evidenceHints || [],
     sourcePaperIds: input.sourcePaperIds || [],
+    literatureQueries: (input.literatureQueries || []).map((query) => ({
+      label: query.label || query.query || "query",
+      query: query.query || "",
+      weight: query.weight || 1
+    })),
+    focusTerms: unique(input.focusTerms || []),
+    round: input.round || "initial",
+    stage: input.stage || "diverge",
+    parentIdeaId: input.parentIdeaId || null,
     tags: unique(input.tags || [])
   };
 }
@@ -155,10 +179,13 @@ export function createIdeaCard(input) {
       flags: [],
       penalty: 0,
       summary: ""
-    }
+    },
+    literatureTrace: input.literatureTrace || null,
+    round: input.round || input.origin?.round || "initial"
   };
 
   const signature = buildIdeaSignature(idea);
+  const familyId = input.familyId || buildIdeaFamilyId(idea);
   const id =
     input.id ||
     buildStableId("idea", [
@@ -169,6 +196,7 @@ export function createIdeaCard(input) {
 
   return {
     id,
+    familyId,
     ...idea,
     signature
   };

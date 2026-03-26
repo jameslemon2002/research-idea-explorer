@@ -1,7 +1,7 @@
 interface:
   display_name: "Research Idea Explorer"
-  short_description: "Brainstorm with personas, then crystallize ideas"
-  default_prompt: "Use $research-idea-explorer to brainstorm with orthogonal personas and turn the strongest seeds into grounded research idea cards."
+  short_description: "Search literature, build one strong frontier, then deepen only when needed"
+  default_prompt: "Use $research-idea-explorer to search literature, build one strong frontier from several orthogonal research moves, and only branch into a deeper second pass if a direction deserves more exploration."
 
 policy:
   allow_implicit_invocation: true

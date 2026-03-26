@@ -1,6 +1,6 @@
 import { ideaSimilarity } from "./dedupe.js";
+import { probeIdeaLiterature } from "./literature-probe.js";
 import { ideaToMatchText, tokenize } from "../schema.js";
-import { scoreIdeaAgainstLiterature } from "../retrieval/literature.js";
 
 const EVIDENCE_FEASIBILITY = {
   observational_data: 0.82,
@@ -30,6 +30,7 @@ export function scoreIdea(idea, context = {}) {
   const keywords = context.state?.constraints?.keywords || [];
   const acceptedIds = new Set(acceptedIdeas.map((candidate) => candidate.id).filter(Boolean));
   const diversityPool = visitedIdeas.filter((candidate) => !acceptedIds.has(candidate.id));
+  const priorFamilies = new Set(visitedIdeas.map((candidate) => candidate.familyId).filter(Boolean));
 
   const maxVisitedSimilarity = diversityPool.length
     ? Math.max(...diversityPool.map((candidate) => ideaSimilarity(idea, candidate)))
@@ -41,12 +42,12 @@ export function scoreIdea(idea, context = {}) {
     ? Math.max(...rejectedIdeas.map((candidate) => ideaSimilarity(idea, candidate)))
     : 0;
 
-  const literatureMatch = scoreIdeaAgainstLiterature(ideaToMatchText(idea), papers);
+  const literatureTrace = idea.literatureTrace || probeIdeaLiterature(idea, papers, context);
   const keywordTokens = new Set(tokenize(keywords.join(" ")));
   const ideaTokens = new Set(tokenize(ideaToMatchText(idea)));
   const keywordHits = [...keywordTokens].filter((token) => ideaTokens.has(token)).length;
 
-  const novelty = Number((1 - literatureMatch.overlap).toFixed(3));
+  const novelty = Number((1 - literatureTrace.crowdedness).toFixed(3));
   const diversity = Number((1 - maxVisitedSimilarity).toFixed(3));
   const feasibilityBase = EVIDENCE_FEASIBILITY[idea.evidence.kind] || 0.65;
   const scopeBonus = average(
@@ -60,28 +61,30 @@ export function scoreIdea(idea, context = {}) {
       keywordTokens.size === 0 ? 0.75 : Math.min(1, keywordHits / Math.max(keywordTokens.size, 1))
     ).toFixed(3)
   );
-  const priorPersonas = new Set(visitedIdeas.map((candidate) => candidate.origin?.personaId).filter(Boolean));
   const creativity = Number(
     Math.min(
       1,
-      (idea.origin?.personaId ? 0.35 : 0.15) +
-        (idea.origin?.sourcePaperIds?.length ? 0.15 : 0) +
-        (idea.origin?.noveltyAngle ? 0.2 : 0) +
-        (!priorPersonas.has(idea.origin?.personaId) ? 0.15 : 0.05) +
-        (idea.critique?.flags?.includes("weak_contrast") ? 0.05 : 0.15)
+      (idea.origin?.sourcePaperIds?.length ? 0.22 : 0.1) +
+        (idea.origin?.noveltyAngle ? 0.18 : 0.05) +
+        (!priorFamilies.has(idea.familyId) ? 0.16 : 0.06) +
+        (idea.round === "mutation" ? 0.16 : 0.08) +
+        (literatureTrace.breadth >= 0.35 ? 0.16 : 0.06) +
+        (idea.critique?.flags?.includes("weak_contrast") ? 0.04 : 0.12)
     ).toFixed(3)
   );
+  const grounding = literatureTrace.grounding;
   const critiquePenalty = idea.critique?.penalty || 0;
 
   const total = Number(
     (
-      0.28 * novelty +
-      0.2 * diversity +
-      0.16 * feasibility +
-      0.14 * userFit +
-      0.22 * creativity +
-      0.12 * acceptedAlignment -
-      0.18 * rejectedAlignment -
+      0.22 * novelty +
+      0.18 * diversity +
+      0.15 * feasibility +
+      0.12 * userFit +
+      0.15 * creativity +
+      0.1 * grounding +
+      0.11 * acceptedAlignment -
+      0.16 * rejectedAlignment -
       critiquePenalty
     ).toFixed(3)
   );
@@ -92,12 +95,14 @@ export function scoreIdea(idea, context = {}) {
     feasibility,
     userFit,
     creativity,
+    grounding,
     acceptedAlignment: Number(acceptedAlignment.toFixed(3)),
     rejectedAlignment: Number(rejectedAlignment.toFixed(3)),
     critiquePenalty,
     total,
-    nearestPaperId: literatureMatch.nearestPaper?.id || null,
-    literatureComponents: literatureMatch.components
+    nearestPaperId: literatureTrace.nearestPaperId || null,
+    literatureBreadth: literatureTrace.breadth,
+    literatureCrowdedness: literatureTrace.crowdedness
   };
 }
 

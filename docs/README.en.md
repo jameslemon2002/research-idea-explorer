@@ -6,7 +6,7 @@
 ## Overview
 
 `Research Idea Explorer` is a tool for research ideation and iterative direction-finding.  
-It combines literature retrieval, persona-based brainstorming, structured idea cards, critique, and memory into one workflow.
+It combines literature retrieval, a strong default single-pass loop, optional deeper branching, structured idea cards, critique, and memory into one workflow.
 
 It can run as a local `CLI`, or plug into agent CLI workflows such as `Codex` and `Claude Code`.
 
@@ -20,10 +20,11 @@ It can run as a local `CLI`, or plug into agent CLI workflows such as `Codex` an
 ## Workflow
 
 1. retrieve public literature or load a local library
-2. brainstorm from multiple personas
-3. crystallize results into research cards
-4. filter with deduplication, overlap checks, and memory-graph signals
-5. continue through accept / reject feedback
+2. build a first-pass literature map and adjacent neighborhoods
+3. diverge from multiple problem framings, then focus to a small frontier
+4. only run a second literature-guided mutation round when the user asks for depth or continues from an accepted direction
+5. filter with deduplication, overlap checks, and memory-graph signals
+6. continue through accept / reject feedback
 
 Usage principle:
 except for pure utility actions such as `graph`, `feedback`, or output-format explanation, research-generation calls search literature first.
@@ -31,10 +32,10 @@ except for pure utility actions such as `graph`, `feedback`, or output-format ex
 ## Named capabilities
 
 - `Scholar Scout`: literature retrieval and grounding
-- `Persona Storm`: multi-persona divergence
-- `Idea Forge`: compact research-card generation
+- `Research Moves`: default single-pass divergence with optional second-pass branching
+- `Idea Forge`: compact research-card generation after the search loop
 - `Crowd Guard`: duplicate and crowded-direction filtering
-- `Frontier Graph`: persistent graph over queries, papers, ideas, and personas
+- `Frontier Graph`: persistent graph over queries, papers, ideas, and related links
 - `Feedback Loop`: write user decisions back into memory
 
 ## Output shape
@@ -86,5 +87,5 @@ npm run cli -- ideas --query "urban heat planning"
 
 ```text
 Use $research-idea-explorer to generate research directions around “urban heat adaptation”.
-Search relevant literature first, then give me brainstorm seeds, and finally crystallize them into four research cards.
+Search literature first, generate one strong frontier, and only branch again through adjacent literature if we decide to deepen one direction.
 ```

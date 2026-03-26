@@ -19,9 +19,16 @@ npm run cli -- ideas --query "urban heat planning"
 This command will:
 
 1. search relevant literature
-2. generate brainstorm seeds
-3. produce research cards
-4. write a JSON memory graph
+2. build a first-pass literature map
+3. generate research moves and a focused frontier
+4. produce research cards
+5. write a JSON memory graph
+
+If you want the deeper two-round mode:
+
+```bash
+npm run cli -- ideas --query "urban heat planning" --rounds 2
+```
 
 ### 3. Inspect memory state
 
@@ -46,10 +53,10 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json
 Then accept one:
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id idea-1 --decision accepted --note "strong direction"
+npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
-Then run `ideas` again to continue from the updated memory graph.
+Then run `ideas` again to continue from the updated memory graph. If the memory graph already contains an `accepted` idea, the next `ideas` run automatically upgrades to two rounds unless you pass `--rounds 1`.
 
 ## Common patterns
 
@@ -77,13 +84,19 @@ npm run cli -- ideas --query "urban heat planning" --search-strategy embedding
 npm run cli -- ideas --query "urban heat planning" --search-strategy graph
 ```
 
+### Force the deeper two-round search
+
+```bash
+npm run cli -- ideas --query "urban heat planning" --rounds 2
+```
+
 ## Use it in Codex
 
 After restarting Codex, you can say:
 
 ```text
 Use $research-idea-explorer to generate research directions around “urban heat adaptation”.
-Search relevant literature first, then give me brainstorm seeds, and finally crystallize them into four research cards.
+Search literature first and give me one strong frontier. If we find a promising direction, branch again through adjacent literature.
 ```
 
 ## Default rules
@@ -91,6 +104,8 @@ Search relevant literature first, then give me brainstorm seeds, and finally cry
 - research-generation calls search literature first
 - pure utility calls such as `graph`, `feedback`, and output-format explanation do not require retrieval
 - the default retrieval mode is `hybrid`
+- the default search depth is `1` round
+- accepted directions automatically trigger `2` rounds on the next continuation unless you pass `--rounds 1`
 
 ## If you remember only one command
 

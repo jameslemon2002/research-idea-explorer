@@ -47,9 +47,9 @@ export function listGraphIdeas(graph, options = {}) {
     .map((node) => ({
       id: node.payload?.id || node.id.replace(/^idea:/, ""),
       nodeId: node.id,
-      title: node.label,
+      title: node.payload?.cardView?.title || node.label,
+      abstract: node.payload?.cardView?.abstract || null,
       status: node.status || "candidate",
-      persona: node.payload?.origin?.personaLabel || null,
       nearestLiterature: node.payload?.scores?.nearestPaperId || node.payload?.critique?.nearestPaperId || null,
       feedback: node.payload?.feedback || null,
       updatedAt: node.updatedAt || null
@@ -131,7 +131,10 @@ export function formatGraphIdeasMarkdown(ideas) {
 
   for (const idea of ideas) {
     lines.push(`- ${idea.id}: ${idea.title}`);
-    lines.push(`  status=${idea.status}; persona=${idea.persona || "n/a"}; nearest=${idea.nearestLiterature || "n/a"}`);
+    lines.push(`  status=${idea.status}; nearest=${idea.nearestLiterature || "n/a"}`);
+    if (idea.abstract) {
+      lines.push(`  abstract=${idea.abstract}`);
+    }
     if (idea.feedback?.decision) {
       lines.push(`  feedback=${idea.feedback.decision}${idea.feedback.note ? ` (${idea.feedback.note})` : ""}`);
     }
@@ -150,7 +153,7 @@ export function formatGraphNeighborhoodMarkdown(neighborhood) {
     "",
     `- Center: ${neighborhood.center.id}`,
     `- Kind: ${neighborhood.center.kind}`,
-    `- Label: ${neighborhood.center.label}`,
+    `- Label: ${neighborhood.center.payload?.cardView?.title || neighborhood.center.label}`,
     ""
   ];
 
@@ -164,7 +167,7 @@ export function formatGraphNeighborhoodMarkdown(neighborhood) {
     const edge =
       neighborhood.edges.find((item) => item.source === neighborhood.center.id && item.target === node.id) ||
       neighborhood.edges.find((item) => item.target === neighborhood.center.id && item.source === node.id);
-    lines.push(`- ${node.id}: ${node.label}`);
+    lines.push(`- ${node.id}: ${node.payload?.cardView?.title || node.label}`);
     lines.push(`  kind=${node.kind}; relation=${edge?.relation || "n/a"}; weight=${edge?.weight || 1}`);
   }
 

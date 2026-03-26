@@ -24,10 +24,11 @@
 `Research Idea Explorer` 是一个面向研究方向生成与迭代推进的工具。它把研究想题组织成一条更稳定的工作流：
 
 1. 先检索公开文献或读取本地文献库
-2. 再用一组彼此正交的 persona 做脑暴
-3. 把 brainstorm seeds 收束成简洁的 research cards
-4. 用重复检测、文献重叠、memory graph 做筛选
-5. 让用户 accept / reject，再继续往新的 research neighborhood 推进
+2. 先做一轮 literature map，找文献簇、对比轴和相邻 neighborhood
+3. 再从几种彼此正交的问题结构出发做单轮发散与聚焦
+4. 在用户 accept 某个方向或显式要求深挖时，再围绕它们做第二轮 literature mutation
+5. 用重复检测、文献重叠、memory graph 做最终筛选
+6. 让用户 accept / reject，再继续往新的 research neighborhood 推进
 
 使用原则：
 除了 `graph`、`feedback`、输出说明这类纯功能调用外，研究生成相关调用会先检索文献，再进入脑暴与排序。
@@ -41,7 +42,7 @@
 
 - 从 `OpenAlex / Crossref / arXiv / Europe PMC / bioRxiv / medRxiv / NBER / Semantic Scholar` 等来源检索 metadata
 - 读取 `Zotero`、本地 `JSON / CSL-JSON / BibTeX` 文献库
-- 用多 persona 脑暴生成候选研究方向
+- 默认做一轮强检索 + 发散 + 聚焦，必要时升级成两轮 literature loop
 - 输出精简 research cards：
   `Title / Abstract / Design / Distinctiveness / Significance`
 - 用 memory graph 记住已探索方向和用户反馈
@@ -55,8 +56,8 @@
 | 功能名 | 作用 |
 |---|---|
 | `Scholar Scout` | 文献检索与 grounding |
-| `Persona Storm` | 多 persona 发散脑暴 |
-| `Idea Forge` | 把 loose seeds 收束成 research cards |
+| `Research Moves` | 用几种正交的问题结构做默认单轮发散 |
+| `Idea Forge` | 把单轮 frontier 或深挖分支收束成 research cards |
 | `Crowd Guard` | 过滤换皮题、近重复和拥挤方向 |
 | `Frontier Graph` | 记住已探索 neighborhood 和文献关系 |
 | `Feedback Loop` | 让用户 accept / reject 后继续推进 |
@@ -112,6 +113,12 @@ npm run demo
 npm run cli -- ideas --query "urban heat planning"
 ```
 
+显式打开双轮深挖：
+
+```bash
+npm run cli -- ideas --query "urban heat planning" --rounds 2
+```
+
 指定公开文献源：
 
 ```bash
@@ -139,8 +146,10 @@ npm run cli -- ideas --query "urban heat planning" --providers local --local-lib
 写回用户反馈：
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id idea-1 --decision accepted --note "strong direction"
+npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
+
+下一次再跑 `ideas` 时，如果 memory 里已经有 `accepted` 方向，系统会自动升级为两轮深挖；如果你只想保持单轮，可以显式传 `--rounds 1`。
 
 更完整的上手流程见：
 - [中文快速上手](docs/quickstart.zh.md)
@@ -163,7 +172,7 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 查看某个 idea 的邻域：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id idea-1
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
 ```
 
 ## 支持的文献源
@@ -187,7 +196,7 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --i
 已包含：
 
 - literature-first 检索主线
-- multi-persona brainstorm
+- literature-guided divergence from multiple research moves
 - 结构化 research cards
 - 去重、反模板和拥挤区过滤
 - persistent JSON memory graph
@@ -215,7 +224,7 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --i
 `Research Idea Explorer` turns research ideation into a pipeline of:
 
 1. literature retrieval
-2. persona-driven brainstorming
+2. divergence from multiple research moves
 3. structured idea-card crystallization
 4. duplicate/crowding critique
 5. memory-graph iteration

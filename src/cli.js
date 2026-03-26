@@ -110,8 +110,8 @@ async function runIdeasCommand(flags) {
   const providers = normalizeProviders(flags);
   const result = await searchLiteratureSources(query, {
     providers,
-    perProviderLimit: toNumber(flags.perProviderLimit, 5),
-    rankLimit: toNumber(flags.rankLimit, 10),
+    perProviderLimit: toNumber(flags.perProviderLimit, 8),
+    rankLimit: toNumber(flags.rankLimit, 14),
     timeoutMs: toNumber(flags.timeoutMs, undefined),
     searchStrategy: flags.searchStrategy || "hybrid",
     domain: flags.domain,
@@ -128,8 +128,10 @@ async function runIdeasCommand(flags) {
 
   const pipeline = runIdeaPipeline(seed, result.index, {
     frontierLimit: toNumber(flags.frontierLimit, 6),
+    rounds: toNumber(flags.rounds, undefined),
     query,
-    memoryGraph
+    memoryGraph,
+    searchStrategy: flags.searchStrategy || "hybrid"
   });
 
   await saveMemoryGraph(memoryPath, pipeline.memoryGraph);

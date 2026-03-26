@@ -24,14 +24,14 @@ That means:
 
 The workflow is:
 
-1. Start with a brainstorm pass from multiple persona viewpoints:
-   `Anomaly Hunter`, `Assumption Breaker`, `Measurement Skeptic`, `Failure Miner`, `Boundary Mapper`, and `Analogy Transfer`.
+1. Start with a literature-guided single-pass divergence across multiple research moves. The built-in persona set remains an internal way to keep those moves orthogonal, but it should not dominate the user-facing framing.
 2. Convert only the strongest brainstorm seeds into the shared internal schema:
    `Object`, `Puzzle`, `Claim`, `Contrast`, `Evidence`, `Scope`, `Stakes`.
 3. Reject ideas that are obvious near-duplicates or amount to a thin "method + topic" pairing.
-4. Push each retained idea one step further by adding:
+4. If the user asks to deepen, branch, compare, or continue from an accepted direction, run a second literature-guided mutation round around the retained frontier families.
+5. Push each retained idea one step further by adding:
    data source, minimal runnable design, likely failure mode, and why the question matters now.
-5. When available, use the persistent memory graph so the session does not keep revisiting the same research neighborhoods.
+6. When available, use the persistent memory graph so the session does not keep revisiting the same research neighborhoods.
 
 ## Guardrails
 
@@ -65,5 +65,5 @@ The richer internal schema can still be used when deeper analysis is needed, but
 
 ## References
 
-Read [references/schema.md](references/schema.md) when you need the field meanings, persona set, or puzzle definitions.
+Read [references/schema.md](references/schema.md) when you need the field meanings, internal move set, or puzzle definitions.
 Read [references/retrieval.md](references/retrieval.md) when literature retrieval is available and you need to decide between lexical, embedding, or graph expansion.

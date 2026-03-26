@@ -1,4 +1,5 @@
 import { ideaSimilarity } from "../engine/dedupe.js";
+import { buildIdeaCardView } from "../presentation/cards.js";
 import { buildIdeaSignature, unique } from "../schema.js";
 
 function nowIso() {
@@ -94,11 +95,12 @@ export function addIdeaNode(graph, idea, status = "candidate") {
     persistedDecision ||
     (existing?.status === "accepted" || existing?.status === "rejected" ? existing.status : null);
   const nextStatus = preservedStatus || status;
+  const label = idea.cardView?.title || idea.title;
 
   return upsertNode(graph, {
     id: ideaNodeId(idea.id),
     kind: "idea",
-    label: idea.title,
+    label,
     payload: {
       ...(existing?.payload || {}),
       ...idea,
@@ -122,13 +124,14 @@ export function addPersonaNode(graph, personaId, personaLabel) {
   });
 }
 
-export function addQueryNode(graph, query) {
+export function addQueryNode(graph, query, payload = {}) {
   return upsertNode(graph, {
     id: queryNodeId(query),
     kind: "query",
     label: query,
     payload: {
-      query
+      query,
+      ...payload
     },
     signature: query
   });
@@ -204,7 +207,20 @@ export function recordIdeaDecision(graph, ideaId, decision, meta = {}) {
 
 export function recordPipelineRun(graph, payload, options = {}) {
   const query = payload.query || payload.state?.focus?.objects?.join(" ") || payload.state?.focus?.domain || "query";
-  const queryNode = addQueryNode(graph, query);
+  const queryNode = addQueryNode(graph, query, {
+    literatureMap: payload.literatureMap
+      ? {
+          strategy: payload.literatureMap.strategy,
+          queryCount: payload.literatureMap.queryCount,
+          uniquePaperCount: payload.literatureMap.uniquePaperCount,
+          neighborhoods: (payload.literatureMap.neighborhoods || []).map((item) => ({
+            anchorPaperId: item.anchorPaperId,
+            focusTerms: item.focusTerms
+          }))
+        }
+      : null,
+    stages: payload.stages || null
+  });
   const papers = Array.isArray(payload.paperIndex)
     ? payload.paperIndex
     : payload.paperIndex?.papers || payload.papers || [];
@@ -222,7 +238,14 @@ export function recordPipelineRun(graph, payload, options = {}) {
   }
 
   for (const idea of rankedIdeas.slice(0, options.ideaLimit || 20)) {
-    const ideaNode = addIdeaNode(graph, idea, frontierIds.has(idea.id) ? "frontier" : "candidate");
+    const ideaWithCardView = {
+      ...idea,
+      cardView: buildIdeaCardView(idea, {
+        paperMap,
+        papers
+      })
+    };
+    const ideaNode = addIdeaNode(graph, ideaWithCardView, frontierIds.has(idea.id) ? "frontier" : "candidate");
     upsertEdge(graph, {
       source: queryNode.id,
       target: ideaNode.id,
@@ -239,8 +262,8 @@ export function recordPipelineRun(graph, payload, options = {}) {
     }
 
     const linkedPaperIds = unique([
-      idea.scores?.nearestPaperId,
-      ...(idea.origin?.sourcePaperIds || [])
+      ideaWithCardView.scores?.nearestPaperId,
+      ...(ideaWithCardView.origin?.sourcePaperIds || [])
     ]).filter(Boolean);
 
     for (const linkedPaperId of linkedPaperIds) {
