@@ -1,6 +1,6 @@
 <div align="center">
 
-# RQ-Explore
+# Research Idea Explorer
 
 ### 把研究想题从一次性 prompt，变成文献驱动、可记忆、可迭代的探索引擎。
 
@@ -21,7 +21,7 @@
 
 ## 中文简介
 
-`RQ-Explore` 是一个面向研究方向生成与迭代推进的工具。它把研究想题组织成一条更稳定的工作流：
+`Research Idea Explorer` 是一个面向研究方向生成与迭代推进的工具。它把研究想题组织成一条更稳定的工作流：
 
 1. 先检索公开文献或读取本地文献库
 2. 再用一组彼此正交的 persona 做脑暴
@@ -47,9 +47,9 @@
 - 用 memory graph 记住已探索方向和用户反馈
 - 导出 `Mermaid`、静态 `SVG`、交互式 `HTML network` 图
 - 作为 Codex skill 使用：
-  [`skills/rq-explore/SKILL.md`](skills/rq-explore/SKILL.md)
+  [`skills/research-idea-explorer/SKILL.md`](skills/research-idea-explorer/SKILL.md)
 - 作为 Claude Code command 使用：
-  [`.claude/commands/rq-explore.md`](.claude/commands/rq-explore.md)
+  [`.claude/commands/research-idea-explorer.md`](.claude/commands/research-idea-explorer.md)
 
 ## 功能地图
 
@@ -76,13 +76,13 @@ npm run cli -- ideas --query "urban heat planning"
 把 skill 目录复制到 `~/.codex/skills/`，然后重启 Codex：
 
 ```bash
-cp -R skills/rq-explore ~/.codex/skills/
+cp -R skills/research-idea-explorer ~/.codex/skills/
 ```
 
 之后可以直接调用：
 
 ```text
-用 $rq-explore 围绕 “urban heat adaptation” 生成一轮研究方向。
+用 $research-idea-explorer 围绕 “urban heat adaptation” 生成一轮研究方向。
 ```
 
 ### 3. Claude Code
@@ -90,13 +90,13 @@ cp -R skills/rq-explore ~/.codex/skills/
 把命令文件放进目标项目的 `.claude/commands/`：
 
 ```bash
-cp .claude/commands/rq-explore.md /path/to/your-project/.claude/commands/
+cp .claude/commands/research-idea-explorer.md /path/to/your-project/.claude/commands/
 ```
 
 之后在 Claude Code 中调用：
 
 ```text
-/rq-explore
+/research-idea-explorer
 ```
 
 ## 快速开始
@@ -220,7 +220,7 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --out
 
 ## English Snapshot
 
-`RQ-Explore` turns research ideation into a pipeline of:
+`Research Idea Explorer` turns research ideation into a pipeline of:
 
 1. literature retrieval
 2. persona-driven brainstorming

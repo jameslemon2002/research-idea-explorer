@@ -1,4 +1,4 @@
-# RQ-Explore Feature Guide
+# Research Idea Explorer Feature Guide
 
 中文在前，English follows below.
 
@@ -11,7 +11,7 @@
 
 ### 这是什么
 
-`RQ-Explore` 不是一个“帮你随便想几个题目”的 prompt 模板，而是一条更稳定的研究生成主线：
+`Research Idea Explorer` 不是一个“帮你随便想几个题目”的 prompt 模板，而是一条更稳定的研究生成主线：
 
 1. 先检索文献或读取用户已有文献库
 2. 再用一组彼此正交的 persona 做脑暴
@@ -278,19 +278,19 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id idea-1 
 重启 Codex 后，可以这样用：
 
 ```text
-用 $rq-explore 围绕 “urban heat adaptation” 做一轮研究 idea 生成。
+用 $research-idea-explorer 围绕 “urban heat adaptation” 做一轮研究 idea 生成。
 先检索相关文献，再给 6 个 brainstorm seeds，
 最后收束成 4 张 structured idea cards。
 ```
 
 ```text
-用 $rq-explore。
+用 $research-idea-explorer。
 优先用 arXiv、OpenAlex、Crossref 检索。
 不要只给标题，要给 minimal design 和去重说明。
 ```
 
 ```text
-继续用 $rq-explore。
+继续用 $research-idea-explorer。
 把刚才第 2 个 idea 视为 accepted，
 不要回到已经访问过的方向，
 请往新的 research neighborhood 推进。
@@ -360,7 +360,7 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id idea-1 
 
 ### What This Project Is
 
-`RQ-Explore` is not a one-shot prompt template. It is a more stable research-generation pipeline:
+`Research Idea Explorer` is not a one-shot prompt template. It is a more stable research-generation pipeline:
 
 1. retrieve literature or load the user's own library
 2. brainstorm from orthogonal personas
@@ -578,19 +578,19 @@ How users can ask:
 After restarting Codex, examples include:
 
 ```text
-Use $rq-explore to generate research ideas around “urban heat adaptation”.
+Use $research-idea-explorer to generate research ideas around “urban heat adaptation”.
 Search relevant literature first, then give me six brainstorm seeds,
 and finally crystallize them into four structured idea cards.
 ```
 
 ```text
-Use $rq-explore.
+Use $research-idea-explorer.
 Prioritize arXiv, OpenAlex, and Crossref.
 Do not stop at titles; include minimal design and duplicate checks.
 ```
 
 ```text
-Continue with $rq-explore.
+Continue with $research-idea-explorer.
 Treat the second idea from the previous round as accepted,
 do not revisit explored directions,
 and extend into a new research neighborhood.
