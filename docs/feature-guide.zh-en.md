@@ -225,18 +225,15 @@ CLI 图视图：
 - `summary`：整体统计
 - `ideas`：最近的 idea 节点
 - `neighbors`：某个 idea / node 的局部邻域
-- `mermaid`：轻量结构图
-- `svg`：静态网络图，适合文档、截图、嵌入
-- `network`：自包含 HTML 网络图，支持拖拽和平移缩放
 
 CLI 例子：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view svg --output ./data/memory/graph.svg
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --output ./data/memory/graph.html
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id idea-1
 ```
 
 #### 6. `Feedback Loop` 反馈回路
@@ -535,18 +532,15 @@ CLI graph views:
 - `summary`: overall counts
 - `ideas`: recent idea nodes
 - `neighbors`: the local neighborhood around an idea or node
-- `mermaid`: lightweight structure diagram
-- `svg`: static network graph for docs and screenshots
-- `network`: self-contained HTML network graph with pan and zoom
 
 CLI examples:
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view svg --output ./data/memory/graph.svg
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --output ./data/memory/graph.html
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id idea-1
 ```
 
 #### 6. `Feedback Loop`

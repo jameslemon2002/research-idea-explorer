@@ -11,7 +11,7 @@
 ![Interface](https://img.shields.io/badge/Interface-CLI%20%2B%20Codex%20%2B%20Claude%20Code-1F2937)
 ![Storage](https://img.shields.io/badge/Storage-JSON%20Memory%20Graph-2563EB)
 ![Retrieval](https://img.shields.io/badge/Retrieval-Hybrid%20Search-F59E0B)
-![Graph](https://img.shields.io/badge/Graph-SVG%20%2B%20HTML%20Network-7C3AED)
+![Memory](https://img.shields.io/badge/Memory-Persistent%20JSON%20Graph-7C3AED)
 
 [中文说明](docs/README.zh.md) | [English Docs](docs/README.en.md) | [快速上手](docs/quickstart.zh.md) | [Quick Start](docs/quickstart.en.md) | [功能总览 / Feature Guide](docs/feature-guide.zh-en.md)
 
@@ -45,7 +45,6 @@
 - 输出精简 research cards：
   `Title / Abstract / Design / Distinctiveness / Significance`
 - 用 memory graph 记住已探索方向和用户反馈
-- 导出 `Mermaid`、静态 `SVG`、交互式 `HTML network` 图
 - 作为 Codex skill 使用：
   [`skills/research-idea-explorer/SKILL.md`](skills/research-idea-explorer/SKILL.md)
 - 作为 Claude Code command 使用：
@@ -147,7 +146,7 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id idea-1 
 - [中文快速上手](docs/quickstart.zh.md)
 - [English Quick Start](docs/quickstart.en.md)
 
-## 图谱视图
+## Memory 检查
 
 查看 memory graph 概览：
 
@@ -155,22 +154,16 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id idea-1 
 npm run cli -- graph --memory ./data/memory/cli-memory.json
 ```
 
-导出轻量 Mermaid 结构图：
+列出最近 ideas：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view mermaid
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
-导出静态 SVG 网络图：
+查看某个 idea 的邻域：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view svg --output ./data/memory/graph.svg
-```
-
-导出交互式 HTML 网络图：
-
-```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --output ./data/memory/graph.html
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id idea-1
 ```
 
 ## 支持的文献源
@@ -199,7 +192,6 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --out
 - 去重、反模板和拥挤区过滤
 - persistent JSON memory graph
 - CLI feedback 回写
-- Mermaid / SVG / HTML network 图输出
 - Codex skill 封装
 
 未包含：
@@ -235,7 +227,6 @@ It already supports:
 - persistent JSON memory graph storage
 - compact research cards
 - CLI feedback loops
-- Mermaid, SVG, and interactive HTML network graph views
 - Codex skill packaging
 
 For full details, use:

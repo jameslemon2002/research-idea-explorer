@@ -23,16 +23,16 @@ This command will:
 3. produce research cards
 4. write a JSON memory graph
 
-### 3. Inspect the graph
+### 3. Inspect memory state
 
 ```bash
 npm run cli -- graph --memory ./data/memory/cli-memory.json
 ```
 
-For a more visual graph:
+To list the most recent ideas:
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --output ./data/memory/graph.html
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ### 4. Accept a direction and continue

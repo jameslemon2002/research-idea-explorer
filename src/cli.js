@@ -4,9 +4,6 @@ import { runIdeaPipeline } from "./engine/pipeline.js";
 import { collectIdeaNodes, createMemoryGraph, recordIdeaDecision } from "./memory/graph.js";
 import { loadMemoryGraph, saveMemoryGraph } from "./memory/store.js";
 import {
-  buildNetworkHtml,
-  buildMermaidGraph,
-  buildSvgNetwork,
   formatGraphIdeasMarkdown,
   formatGraphNeighborhoodMarkdown,
   formatGraphSummaryMarkdown,
@@ -335,26 +332,8 @@ async function runGraphCommand(flags) {
         : formatGraphNeighborhoodMarkdown(neighborhood);
   } else if (view === "json") {
     output = JSON.stringify({ memoryPath, graph }, null, 2);
-  } else if (view === "mermaid") {
-    output = buildMermaidGraph(graph, {
-      ideaId: flags.ideaId,
-      nodeId: flags.nodeId,
-      limit
-    });
-  } else if (view === "svg") {
-    output = buildSvgNetwork(graph, {
-      ideaId: flags.ideaId,
-      nodeId: flags.nodeId,
-      limit
-    });
-  } else if (view === "network") {
-    output = buildNetworkHtml(graph, {
-      ideaId: flags.ideaId,
-      nodeId: flags.nodeId,
-      limit
-    });
   } else {
-    throw new Error(`Unknown graph view: ${view}`);
+    throw new Error(`Unknown graph view: ${view}. Supported views: summary, ideas, neighbors, json.`);
   }
 
   if (flags.output) {

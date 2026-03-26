@@ -23,16 +23,16 @@ npm run cli -- ideas --query "urban heat planning"
 3. 输出 research cards
 4. 写入 memory graph JSON
 
-### 3. 看图谱
+### 3. 看 memory 概览
 
 ```bash
 npm run cli -- graph --memory ./data/memory/cli-memory.json
 ```
 
-如果你想看更直观的关系图：
+如果你想看最近生成的 ideas：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view network --output ./data/memory/graph.html
+npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ### 4. 接受一个方向，继续推进

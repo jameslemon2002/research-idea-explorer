@@ -47,14 +47,11 @@
 - `Distinctiveness`
 - `Significance`
 
-memory graph 支持这些视图：
+memory graph 支持这些检查视图：
 
 - `summary`
 - `ideas`
 - `neighbors`
-- `mermaid`
-- `svg`
-- `network`
 
 ## 支持的文献源
 

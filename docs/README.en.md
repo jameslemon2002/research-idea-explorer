@@ -47,14 +47,11 @@ Default research cards contain:
 - `Distinctiveness`
 - `Significance`
 
-Memory graph views:
+Memory graph inspection views:
 
 - `summary`
 - `ideas`
 - `neighbors`
-- `mermaid`
-- `svg`
-- `network`
 
 ## Supported sources
 

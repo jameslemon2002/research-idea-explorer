@@ -198,8 +198,8 @@ test("cli graph summary reports memory graph counts", async () => {
   assert.match(stdout, /- Edge relations:/);
 });
 
-test("cli graph mermaid view renders a mermaid diagram", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "rse-cli-graph-mermaid-"));
+test("cli graph rejects removed visualization views", async () => {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "rse-cli-graph-removed-"));
   const libraryPath = path.join(tempDir, "library.json");
   const memoryPath = path.join(tempDir, "memory.json");
 
@@ -208,19 +208,19 @@ test("cli graph mermaid view renders a mermaid diagram", async () => {
     JSON.stringify([
       {
         id: "local-1",
-        title: "Graph mermaid study",
+        title: "Graph removed view study",
         abstract: "A local paper.",
         authors: ["Alice Smith"],
         year: 2025,
-        keywords: ["graph", "mermaid"]
+        keywords: ["graph", "removed"]
       }
     ])
   );
 
-  const { stdout: ideaStdout } = await runCli([
+  await runCli([
     "ideas",
     "--query",
-    "graph mermaid",
+    "graph removed",
     "--providers",
     "local",
     "--local-library-path",
@@ -231,96 +231,16 @@ test("cli graph mermaid view renders a mermaid diagram", async () => {
     "json"
   ]);
 
-  const generated = JSON.parse(ideaStdout);
-  const ideaId = generated.frontier[0].id;
-  const { stdout } = await runCli(["graph", "--memory", memoryPath, "--view", "mermaid", "--idea-id", ideaId]);
-
-  assert.match(stdout, /```mermaid/);
-  assert.match(stdout, /flowchart TD/);
-  assert.match(stdout, /Idea:/);
-});
-
-test("cli graph svg view renders a standalone svg network", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "rse-cli-graph-svg-"));
-  const libraryPath = path.join(tempDir, "library.json");
-  const memoryPath = path.join(tempDir, "memory.json");
-
-  await fs.writeFile(
-    libraryPath,
-    JSON.stringify([
-      {
-        id: "local-1",
-        title: "Graph svg study",
-        abstract: "A local paper.",
-        authors: ["Alice Smith"],
-        year: 2025,
-        keywords: ["graph", "svg"]
-      }
-    ])
+  await assert.rejects(
+    runCli(["graph", "--memory", memoryPath, "--view", "svg"]),
+    /Supported views: summary, ideas, neighbors, json/
   );
-
-  const { stdout: ideaStdout } = await runCli([
-    "ideas",
-    "--query",
-    "graph svg",
-    "--providers",
-    "local",
-    "--local-library-path",
-    libraryPath,
-    "--memory",
-    memoryPath,
-    "--format",
-    "json"
-  ]);
-
-  const generated = JSON.parse(ideaStdout);
-  const ideaId = generated.frontier[0].id;
-  const { stdout } = await runCli(["graph", "--memory", memoryPath, "--view", "svg", "--idea-id", ideaId]);
-
-  assert.match(stdout, /<svg[\s\S]*Research memory network/i);
-  assert.match(stdout, /<circle/);
-  assert.match(stdout, /<line/);
-});
-
-test("cli graph network view renders a self-contained html network", async () => {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "rse-cli-graph-network-"));
-  const libraryPath = path.join(tempDir, "library.json");
-  const memoryPath = path.join(tempDir, "memory.json");
-
-  await fs.writeFile(
-    libraryPath,
-    JSON.stringify([
-      {
-        id: "local-1",
-        title: "Graph network study",
-        abstract: "A local paper.",
-        authors: ["Alice Smith"],
-        year: 2025,
-        keywords: ["graph", "network"]
-      }
-    ])
+  await assert.rejects(
+    runCli(["graph", "--memory", memoryPath, "--view", "network"]),
+    /Supported views: summary, ideas, neighbors, json/
   );
-
-  const { stdout: ideaStdout } = await runCli([
-    "ideas",
-    "--query",
-    "graph network",
-    "--providers",
-    "local",
-    "--local-library-path",
-    libraryPath,
-    "--memory",
-    memoryPath,
-    "--format",
-    "json"
-  ]);
-
-  const generated = JSON.parse(ideaStdout);
-  const ideaId = generated.frontier[0].id;
-  const { stdout } = await runCli(["graph", "--memory", memoryPath, "--view", "network", "--idea-id", ideaId]);
-
-  assert.match(stdout, /<!doctype html>/i);
-  assert.match(stdout, /Research Memory Network/);
-  assert.match(stdout, /Drag to pan, scroll to zoom/i);
-  assert.match(stdout, /const graph = /);
+  await assert.rejects(
+    runCli(["graph", "--memory", memoryPath, "--view", "mermaid"]),
+    /Supported views: summary, ideas, neighbors, json/
+  );
 });
