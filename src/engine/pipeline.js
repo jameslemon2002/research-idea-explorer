@@ -5,7 +5,7 @@ import { dedupeIdeas } from "./dedupe.js";
 import { buildLiteratureMap } from "./literature-map.js";
 import { buildMutationRound } from "./mutate.js";
 import { rankIdeas } from "./scoring.js";
-import { createResearchState } from "../schema.js";
+import { buildTopicProfile, createResearchState } from "../schema.js";
 import {
   collectAcceptedIdeas,
   collectRejectedIdeas,
@@ -67,13 +67,26 @@ export function runIdeaPipeline(input, papers, options = {}) {
   const state = createResearchState(input);
   const memoryGraph = options.memoryGraph || createMemoryGraph();
   const searchStrategy = options.searchStrategy || papers?.options?.defaultStrategy || "hybrid";
-  const memoryVisitedIdeas = options.visitedIdeas || collectVisitedIdeas(memoryGraph);
-  const memoryAcceptedIdeas = options.acceptedIdeas || collectAcceptedIdeas(memoryGraph);
-  const memoryRejectedIdeas = options.rejectedIdeas || collectRejectedIdeas(memoryGraph);
+  const topicProfile = buildTopicProfile({
+    ...input,
+    query: options.query || input.query || input.focus?.objects?.join(" ")
+  });
+  const memoryScope = options.memoryScope || "topic";
+  const memoryScopeOptions = {
+    scope: memoryScope,
+    topicProfile,
+    threshold: options.memoryTopicThreshold
+  };
+  const memoryVisitedIdeas = options.visitedIdeas || collectVisitedIdeas(memoryGraph, memoryScopeOptions);
+  const memoryAcceptedIdeas = options.acceptedIdeas || collectAcceptedIdeas(memoryGraph, memoryScopeOptions);
+  const memoryRejectedIdeas = options.rejectedIdeas || collectRejectedIdeas(memoryGraph, memoryScopeOptions);
   const requestedRounds = Number(options.rounds || 0);
   const effectiveRounds =
     requestedRounds >= 1 ? Math.min(2, requestedRounds) : memoryAcceptedIdeas.length ? 2 : 1;
-  state.visitedSignatures = [...new Set([...state.visitedSignatures, ...collectVisitedSignatures(memoryGraph)])];
+  state.topicProfile = topicProfile;
+  state.visitedSignatures = [
+    ...new Set([...state.visitedSignatures, ...collectVisitedSignatures(memoryGraph, memoryScopeOptions)])
+  ];
   state.acceptedIdeas = [...state.acceptedIdeas, ...memoryAcceptedIdeas];
   state.rejectedIdeas = [...state.rejectedIdeas, ...memoryRejectedIdeas];
   state.history = [...state.history, ...memoryVisitedIdeas];
@@ -167,6 +180,7 @@ export function runIdeaPipeline(input, papers, options = {}) {
     {
       query: options.query,
       state,
+      topicProfile,
       rankedIdeas,
       frontier,
       paperIndex: papers,
@@ -198,6 +212,8 @@ export function runIdeaPipeline(input, papers, options = {}) {
 
   return {
     state,
+    topicProfile,
+    memoryScope,
     literatureMap,
     effectiveRounds,
     rounds: {

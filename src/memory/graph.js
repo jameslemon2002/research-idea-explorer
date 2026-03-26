@@ -1,6 +1,6 @@
 import { ideaSimilarity } from "../engine/dedupe.js";
 import { buildIdeaCardView } from "../presentation/cards.js";
-import { buildIdeaSignature, unique } from "../schema.js";
+import { buildIdeaSignature, buildTopicProfile, sameTopic, unique } from "../schema.js";
 
 function nowIso() {
   return new Date().toISOString();
@@ -104,6 +104,7 @@ export function addIdeaNode(graph, idea, status = "candidate") {
     payload: {
       ...(existing?.payload || {}),
       ...idea,
+      topicProfile: buildTopicProfile(idea.topicProfile || idea),
       feedback: idea.feedback || existing?.payload?.feedback
     },
     signature: idea.signature || buildIdeaSignature(idea),
@@ -131,26 +132,49 @@ export function addQueryNode(graph, query, payload = {}) {
     label: query,
     payload: {
       query,
-      ...payload
+      ...payload,
+      topicProfile: buildTopicProfile(payload.topicProfile || { query })
     },
     signature: query
   });
 }
 
-export function collectVisitedIdeas(graph) {
+function matchesTopicScope(node, options = {}) {
+  const mode = options.scope || "global";
+  if (mode === "global" || !options.topicProfile) {
+    return true;
+  }
+
+  if (node.kind !== "idea" || !node.payload) {
+    return false;
+  }
+
+  const candidateProfile = buildTopicProfile(
+    node.payload.topicProfile || {
+      object: node.payload.object,
+      keywords: node.payload.origin?.focusTerms || []
+    }
+  );
+
+  return sameTopic(candidateProfile, options.topicProfile, {
+    threshold: options.threshold
+  });
+}
+
+export function collectVisitedIdeas(graph, options = {}) {
   return Object.values(graph.nodes)
-    .filter((node) => node.kind === "idea" && node.payload)
+    .filter((node) => node.kind === "idea" && node.payload && matchesTopicScope(node, options))
     .map((node) => node.payload);
 }
 
-function collectIdeasByDecision(graph, decision) {
+function collectIdeasByDecision(graph, decision, options = {}) {
   return Object.values(graph.nodes)
     .filter((node) => {
       if (node.kind !== "idea" || !node.payload) {
         return false;
       }
 
-      return node.payload.feedback?.decision === decision || node.status === decision;
+      return matchesTopicScope(node, options) && (node.payload.feedback?.decision === decision || node.status === decision);
     })
     .map((node) => node.payload);
 }
@@ -159,18 +183,18 @@ export function collectIdeaNodes(graph) {
   return Object.values(graph.nodes).filter((node) => node.kind === "idea");
 }
 
-export function collectAcceptedIdeas(graph) {
-  return collectIdeasByDecision(graph, "accepted");
+export function collectAcceptedIdeas(graph, options = {}) {
+  return collectIdeasByDecision(graph, "accepted", options);
 }
 
-export function collectRejectedIdeas(graph) {
-  return collectIdeasByDecision(graph, "rejected");
+export function collectRejectedIdeas(graph, options = {}) {
+  return collectIdeasByDecision(graph, "rejected", options);
 }
 
-export function collectVisitedSignatures(graph) {
+export function collectVisitedSignatures(graph, options = {}) {
   return unique(
     Object.values(graph.nodes)
-      .filter((node) => node.kind === "idea" && node.signature)
+      .filter((node) => node.kind === "idea" && node.signature && matchesTopicScope(node, options))
       .map((node) => node.signature)
   );
 }
@@ -208,6 +232,7 @@ export function recordIdeaDecision(graph, ideaId, decision, meta = {}) {
 export function recordPipelineRun(graph, payload, options = {}) {
   const query = payload.query || payload.state?.focus?.objects?.join(" ") || payload.state?.focus?.domain || "query";
   const queryNode = addQueryNode(graph, query, {
+    topicProfile: payload.topicProfile,
     literatureMap: payload.literatureMap
       ? {
           strategy: payload.literatureMap.strategy,
@@ -240,6 +265,7 @@ export function recordPipelineRun(graph, payload, options = {}) {
   for (const idea of rankedIdeas.slice(0, options.ideaLimit || 20)) {
     const ideaWithCardView = {
       ...idea,
+      topicProfile: payload.topicProfile,
       cardView: buildIdeaCardView(idea, {
         paperMap,
         papers

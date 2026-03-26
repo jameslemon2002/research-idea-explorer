@@ -210,6 +210,11 @@ npm run cli -- ideas --query "climate adaptation equity" --search-strategy hybri
 作用：
 把 ideas、papers、queries 和相关线索放进同一 memory graph，避免每轮都从零开始。
 
+默认情况下，continuation 会按 topic scope 过滤 memory：
+- 相近题目会互相延续
+- 不同题目共用同一个 memory 文件时不会互相污染
+- 如果你明确要跨题目共享 history，可以用 `--memory-scope global`
+
 graph 会记录：
 - query
 - paper
@@ -524,6 +529,11 @@ How users can ask:
 
 Purpose:
 Keep queries, papers, ideas, and related links in one persistent graph so each round does not restart from zero.
+
+By default, continuation is filtered by topic scope:
+- nearby topics can continue from each other
+- unrelated topics in one shared memory file do not cross-contaminate
+- use `--memory-scope global` only when you explicitly want one global history
 
 How users can ask:
 - “Do not return to directions we already explored.”

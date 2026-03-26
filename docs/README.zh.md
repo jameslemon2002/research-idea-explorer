@@ -38,6 +38,8 @@
 - `Frontier Graph`：记录 query、paper、idea 与相关线索的关系
 - `Feedback Loop`：将用户反馈回写到 memory graph
 
+默认情况下，memory continuation 会按 topic scope 隔离，所以不同题目可以共用一个 memory 文件而不继承彼此的 accept/reject 历史。只有你明确想跨题目迁移经验时，才建议用 `--memory-scope global`。
+
 ## 输出内容
 
 默认 research card 包含：

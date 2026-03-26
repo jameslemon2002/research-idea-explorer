@@ -58,6 +58,16 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 
 然后再跑一轮 `ideas`，系统会结合已有 memory graph 继续推进。如果 memory 里已经有 `accepted` 方向，下一次 `ideas` 会自动升级成两轮深挖；如果你只想保持单轮，可以显式传 `--rounds 1`。
 
+默认情况下，memory continuation 是按 topic scope 隔离的：
+- 相近题目会延续同一段探索历史
+- 不同题目即使共用一个 memory 文件，也不会互相污染
+
+如果你就是想让不同题目共享同一份 history，可以显式传：
+
+```bash
+npm run cli -- ideas --query "your topic here" --memory-scope global
+```
+
 ## 常见用法
 
 ### 指定文献源
@@ -106,6 +116,7 @@ npm run cli -- ideas --query "urban heat planning" --rounds 2
 - 默认检索模式是 `hybrid`
 - 默认搜索深度是 `1` 轮
 - 如果已经 accept 过某个方向，下一次继续推进会自动升级成 `2` 轮，除非你显式传 `--rounds 1`
+- 默认 memory scope 是 `topic`
 
 ## 如果你只记一条命令
 

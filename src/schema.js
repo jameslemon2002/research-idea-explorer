@@ -20,6 +20,42 @@ export function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+const TOPIC_STOPWORDS = new Set([
+  "a",
+  "an",
+  "and",
+  "for",
+  "from",
+  "in",
+  "into",
+  "of",
+  "on",
+  "or",
+  "the",
+  "to",
+  "with",
+  "without",
+  "study",
+  "studies",
+  "research",
+  "topic",
+  "topics",
+  "query",
+  "queries",
+  "live",
+  "search",
+  "novelty",
+  "feasibility",
+  "literature",
+  "awareness",
+  "relevant",
+  "recent",
+  "contexts",
+  "surfaced",
+  "retrieved",
+  "unspecified"
+]);
+
 function buildStableId(prefix, values) {
   const digest = createHash("sha1")
     .update(values.map((value) => normalizeText(value)).join("|"))
@@ -27,6 +63,116 @@ function buildStableId(prefix, values) {
     .slice(0, 12);
 
   return `${prefix}-${digest}`;
+}
+
+function topicJaccard(leftTokens, rightTokens) {
+  const left = new Set(leftTokens);
+  const right = new Set(rightTokens);
+  const intersection = [...left].filter((token) => right.has(token)).length;
+  const union = new Set([...left, ...right]).size;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function topicKeywords(input = {}) {
+  if (Array.isArray(input.constraints?.keywords)) {
+    return input.constraints.keywords;
+  }
+
+  if (Array.isArray(input.keywords)) {
+    return input.keywords;
+  }
+
+  return [];
+}
+
+function topicObjects(input = {}) {
+  if (Array.isArray(input.focus?.objects)) {
+    return input.focus.objects;
+  }
+
+  if (Array.isArray(input.objects)) {
+    return input.objects;
+  }
+
+  if (input.object) {
+    return [input.object];
+  }
+
+  if (input.query) {
+    return [input.query];
+  }
+
+  return [];
+}
+
+function topicDomain(input = {}) {
+  const raw = input.focus?.domain || input.domain || input.topicProfile?.domain || "";
+  const domain = normalizeText(raw);
+  return domain && !["live search", "unspecified domain"].includes(domain) ? domain : "";
+}
+
+function topicFocusTerms(input = {}) {
+  if (Array.isArray(input.focusTerms)) {
+    return input.focusTerms;
+  }
+
+  if (Array.isArray(input.origin?.focusTerms)) {
+    return input.origin.focusTerms;
+  }
+
+  return [];
+}
+
+export function buildTopicProfile(input = {}) {
+  if (input.topicProfile?.id && Array.isArray(input.topicProfile?.tokens)) {
+    return {
+      id: input.topicProfile.id,
+      text: input.topicProfile.text || input.topicProfile.tokens.join(" "),
+      tokens: unique(input.topicProfile.tokens.map((token) => normalizeText(token)).filter(Boolean)),
+      domain: input.topicProfile.domain || null
+    };
+  }
+
+  if (input.id && Array.isArray(input.tokens)) {
+    return {
+      id: input.id,
+      text: input.text || input.tokens.join(" "),
+      tokens: unique(input.tokens.map((token) => normalizeText(token)).filter(Boolean)),
+      domain: input.domain || null
+    };
+  }
+
+  const objects = topicObjects(input);
+  const keywords = topicKeywords(input);
+  const focusTerms = topicFocusTerms(input);
+  const domain = topicDomain(input);
+  const text = unique([...objects, ...keywords, ...focusTerms, domain]).join(" ").trim();
+  const tokens = unique(
+    tokenize(text)
+      .filter((token) => token.length > 1)
+      .filter((token) => !TOPIC_STOPWORDS.has(token))
+  );
+
+  return {
+    id: buildStableId("topic", tokens.length ? tokens : [text || "topic"]),
+    text: text || objects.join(" ") || domain || "topic",
+    tokens,
+    domain: domain || null
+  };
+}
+
+export function topicSimilarity(left, right) {
+  const leftProfile = buildTopicProfile(left);
+  const rightProfile = buildTopicProfile(right);
+  return topicJaccard(leftProfile.tokens, rightProfile.tokens);
+}
+
+export function sameTopic(left, right, options = {}) {
+  const threshold = options.threshold ?? 0.26;
+  const leftProfile = buildTopicProfile(left);
+  const rightProfile = buildTopicProfile(right);
+
+  return leftProfile.id === rightProfile.id || topicSimilarity(leftProfile, rightProfile) >= threshold;
 }
 
 export function buildIdeaSignature(idea) {
@@ -181,7 +327,11 @@ export function createIdeaCard(input) {
       summary: ""
     },
     literatureTrace: input.literatureTrace || null,
-    round: input.round || input.origin?.round || "initial"
+    round: input.round || input.origin?.round || "initial",
+    topicProfile: buildTopicProfile(input.topicProfile || {
+      object: input.object,
+      keywords: input.origin?.focusTerms || []
+    })
   };
 
   const signature = buildIdeaSignature(idea);
@@ -218,6 +368,7 @@ export function createResearchState(input = {}) {
     contrasts: input.contrasts || [],
     scope: input.scope || {},
     stakes: input.stakes || [],
+    topicProfile: buildTopicProfile(input),
     visitedSignatures: input.visitedSignatures || [],
     acceptedIdeas: input.acceptedIdeas || [],
     rejectedIdeas: input.rejectedIdeas || [],

@@ -58,6 +58,16 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 
 Then run `ideas` again to continue from the updated memory graph. If the memory graph already contains an `accepted` idea, the next `ideas` run automatically upgrades to two rounds unless you pass `--rounds 1`.
 
+By default, memory continuation is topic-scoped:
+- nearby topics can continue from each other
+- unrelated topics in the same memory file do not cross-contaminate
+
+If you want one shared global history instead:
+
+```bash
+npm run cli -- ideas --query "your topic here" --memory-scope global
+```
+
 ## Common patterns
 
 ### Specify literature sources
@@ -106,6 +116,7 @@ Search literature first and give me one strong frontier. If we find a promising 
 - the default retrieval mode is `hybrid`
 - the default search depth is `1` round
 - accepted directions automatically trigger `2` rounds on the next continuation unless you pass `--rounds 1`
+- the default memory scope is `topic`
 
 ## If you remember only one command
 

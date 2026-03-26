@@ -128,6 +128,8 @@ async function runIdeasCommand(flags) {
 
   const pipeline = runIdeaPipeline(seed, result.index, {
     frontierLimit: toNumber(flags.frontierLimit, 6),
+    memoryScope: flags.memoryScope || "topic",
+    memoryTopicThreshold: toNumber(flags.memoryTopicThreshold, undefined),
     rounds: toNumber(flags.rounds, undefined),
     query,
     memoryGraph,

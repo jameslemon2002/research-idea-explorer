@@ -45,7 +45,7 @@
 - 默认做一轮强检索 + 发散 + 聚焦，必要时升级成两轮 literature loop
 - 输出精简 research cards：
   `Title / Abstract / Design / Distinctiveness / Significance`
-- 用 memory graph 记住已探索方向和用户反馈
+- 用 memory graph 记住已探索方向和用户反馈，且默认按 topic scope 隔离
 - 作为 Codex skill 使用：
   [`skills/research-idea-explorer/SKILL.md`](skills/research-idea-explorer/SKILL.md)
 - 作为 Claude Code command 使用：
@@ -150,6 +150,16 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 ```
 
 下一次再跑 `ideas` 时，如果 memory 里已经有 `accepted` 方向，系统会自动升级为两轮深挖；如果你只想保持单轮，可以显式传 `--rounds 1`。
+
+默认情况下，同一个 memory 文件里的历史会按 topic scope 隔离：
+- `urban heat adaptation` 和 `urban heat planning` 这类相近题目会延续
+- `urban heat adaptation` 和 `corporate finance productivity` 这类不同题目不会互相污染
+
+如果你就是想让不同题目共享同一份 history，可以显式传：
+
+```bash
+npm run cli -- ideas --query "your topic here" --memory-scope global
+```
 
 更完整的上手流程见：
 - [中文快速上手](docs/quickstart.zh.md)

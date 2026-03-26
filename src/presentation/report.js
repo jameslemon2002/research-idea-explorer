@@ -101,6 +101,8 @@ export function buildJsonResult(result, memoryPath) {
       query: result.query,
       providers: result.providers,
       effectiveRounds: result.pipeline.effectiveRounds,
+      memoryScope: result.pipeline.memoryScope,
+      topicProfile: result.pipeline.topicProfile,
       errors: result.errors.map((item) => ({
         provider: item.provider,
         message: item.error.message
