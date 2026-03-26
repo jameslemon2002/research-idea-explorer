@@ -3,6 +3,7 @@ import { sampleSeed } from "./data/sample-seed.js";
 import { loadMemoryGraph, saveMemoryGraph } from "./memory/store.js";
 import { updateFrontier } from "./engine/state.js";
 import { runIdeaPipeline } from "./engine/pipeline.js";
+import { buildIdeaCardView } from "./presentation/cards.js";
 import { buildLiteratureIndex, getGraphNeighbors, searchLiterature } from "./retrieval/literature.js";
 
 const memoryPath = process.env.RESEARCH_MEMORY_PATH || "data/memory/demo-memory.json";
@@ -42,15 +43,15 @@ for (const seed of pipeline.brainstormSeeds) {
 
 console.log("Frontier idea cards after critique and ranking:\n");
 for (const idea of pipeline.frontier) {
-  console.log(`${idea.title}`);
-  console.log(`  persona: ${idea.origin.personaLabel}`);
-  console.log(`  puzzle: ${idea.puzzle.label}`);
-  console.log(`  claim: ${idea.claim.label}`);
-  console.log(`  contrast: ${idea.contrast.comparison}`);
-  console.log(`  evidence: ${idea.evidence.kind}`);
+  const card = buildIdeaCardView(idea, {
+    paperMap: literatureIndex.paperMap
+  });
+  console.log(`${card.title}`);
+  console.log(`  abstract: ${card.abstract}`);
+  console.log(`  design: ${card.design}`);
+  console.log(`  distinctiveness: ${card.distinctiveness}`);
+  console.log(`  significance: ${card.significance}`);
   console.log(`  scores: ${JSON.stringify(idea.scores)}`);
-  console.log(`  critique: ${idea.critique.summary}`);
-  console.log(`  rationale: ${idea.rationale}`);
   console.log("");
 }
 

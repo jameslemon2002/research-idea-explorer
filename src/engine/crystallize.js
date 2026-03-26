@@ -1,4 +1,5 @@
 import { EVIDENCE_LIBRARY, getClaim, getPuzzle } from "../domain/taxonomy.js";
+import { buildIdeaTitle } from "../idea-language.js";
 import { createIdeaCard } from "../schema.js";
 
 function compatibleClaims(seed, state) {
@@ -34,7 +35,12 @@ function selectEvidenceKinds(seed, claim, state) {
 }
 
 function buildTitle(seed, puzzle, claim, contrast) {
-  return `${claim.label} ${seed.object} by asking whether ${seed.pivot} under ${contrast.comparison}`;
+  return buildIdeaTitle({
+    object: seed.object,
+    puzzle,
+    claim,
+    contrast
+  });
 }
 
 function buildRationale(seed, puzzle, claim, contrast, evidence, state) {
@@ -94,4 +100,3 @@ export function crystallizeSeeds(brainstormSeeds, state, options = {}) {
 
   return ideas.slice(0, options.limit || 64);
 }
-

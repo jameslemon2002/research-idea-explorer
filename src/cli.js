@@ -11,6 +11,7 @@ import {
   listGraphIdeas,
   summarizeMemoryGraph
 } from "./memory/view.js";
+import { buildJsonResult, formatIdeasMarkdown } from "./presentation/report.js";
 import { buildQuerySeed } from "./query-seed.js";
 import { searchLiteratureSources } from "./retrieval/live.js";
 
@@ -96,133 +97,6 @@ function asArray(value) {
     return [];
   }
   return Array.isArray(value) ? value : [value];
-}
-
-function formatSeed(seed) {
-  return `- [${seed.persona.label}] ${seed.hook} Pivot: ${seed.pivot}.`;
-}
-
-function buildMinimalDesign(idea) {
-  return [
-    `Use ${idea.evidence.detail.toLowerCase()}`,
-    `compare ${idea.contrast.comparison}`,
-    `within ${idea.scope.place}`
-  ].join(", ");
-}
-
-function compactList(values = []) {
-  return values.filter(Boolean).join(", ");
-}
-
-function buildAbstract(idea) {
-  return `Treats ${idea.object} as a ${idea.puzzle.label.toLowerCase()} problem and aims to ${idea.claim.outcome} by focusing on ${idea.contrast.comparison}.`;
-}
-
-function buildDesign(idea) {
-  return `${buildMinimalDesign(idea)}.`;
-}
-
-function buildDistinctiveness(idea) {
-  const frame = `Uses a ${idea.puzzle.label.toLowerCase()} framing with ${idea.contrast.axis} as the main contrast`;
-  const note =
-    idea.critique?.summary && idea.critique.summary !== "No major template warning detected."
-      ? ` ${idea.critique.summary}`
-      : "";
-  return `${frame} rather than a generic topic-method pairing.${note}`.trim();
-}
-
-function buildSignificance(idea) {
-  const stakes = compactList(idea.stakes || []);
-  const scope = compactList([idea.scope.population, idea.scope.place].filter(Boolean));
-  if (stakes && scope) {
-    return `Matters for ${stakes} in ${scope}.`;
-  }
-  if (stakes) {
-    return `Matters for ${stakes}.`;
-  }
-  if (scope) {
-    return `Matters within ${scope}.`;
-  }
-  return "Matters because it opens a concrete, testable research direction.";
-}
-
-function formatIdeaMarkdown(idea) {
-  return [
-    `### ${idea.title}`,
-    `- Abstract: ${buildAbstract(idea)}`,
-    `- Design: ${buildDesign(idea)}`,
-    `- Distinctiveness: ${buildDistinctiveness(idea)}`,
-    `- Significance: ${buildSignificance(idea)}`
-  ].join("\n");
-}
-
-function formatIdeasMarkdown(result, memoryPath) {
-  const lines = [
-    "# Research Idea Explorer",
-    "",
-    `Query: ${result.query}`,
-    `Providers: ${result.providers.join(", ")}`,
-    `Memory: ${memoryPath}`,
-    ""
-  ];
-
-  if (result.errors.length) {
-    lines.push("## Provider Errors", "");
-    for (const item of result.errors) {
-      lines.push(`- ${item.provider}: ${item.error.message}`);
-    }
-    lines.push("");
-  }
-
-  lines.push("## Top Papers", "");
-  for (const hit of result.rankedHits.slice(0, 5)) {
-    lines.push(
-      `- ${hit.paper.title} [${hit.paper.providers?.join("+") || hit.paper.provider}] (${hit.paper.year || "n.d."})`
-    );
-  }
-  lines.push("");
-
-  lines.push("## Brainstorm Seeds", "");
-  for (const seed of result.pipeline.brainstormSeeds) {
-    lines.push(formatSeed(seed));
-  }
-  lines.push("");
-
-  lines.push("## Frontier Ideas", "");
-  for (const idea of result.pipeline.frontier) {
-    lines.push(formatIdeaMarkdown(idea));
-    lines.push("");
-  }
-
-  return lines.join("\n").trim();
-}
-
-function buildJsonResult(result, memoryPath) {
-  return JSON.stringify(
-    {
-      query: result.query,
-      providers: result.providers,
-      errors: result.errors.map((item) => ({
-        provider: item.provider,
-        message: item.error.message
-      })),
-      topPapers: result.rankedHits.slice(0, 5).map((hit) => hit.paper),
-      brainstormSeeds: result.pipeline.brainstormSeeds,
-      frontier: result.pipeline.frontier.map((idea) => ({
-        ...idea,
-        cardView: {
-          title: idea.title,
-          abstract: buildAbstract(idea),
-          design: buildDesign(idea),
-          distinctiveness: buildDistinctiveness(idea),
-          significance: buildSignificance(idea)
-        }
-      })),
-      memoryPath
-    },
-    null,
-    2
-  );
 }
 
 async function runIdeasCommand(flags) {

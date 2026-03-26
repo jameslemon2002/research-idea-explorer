@@ -1,4 +1,4 @@
-import { ideaToText, tokenize, unique } from "../schema.js";
+import { ideaToSimilarityText, tokenize, unique } from "../schema.js";
 
 export function jaccardSimilarity(leftTokens, rightTokens) {
   const left = new Set(leftTokens);
@@ -10,8 +10,8 @@ export function jaccardSimilarity(leftTokens, rightTokens) {
 
 export function ideaSimilarity(leftIdea, rightIdea) {
   return jaccardSimilarity(
-    unique(tokenize(ideaToText(leftIdea))),
-    unique(tokenize(ideaToText(rightIdea)))
+    unique(tokenize(ideaToSimilarityText(leftIdea))),
+    unique(tokenize(ideaToSimilarityText(rightIdea)))
   );
 }
 
@@ -35,4 +35,3 @@ export function dedupeIdeas(ideas, threshold = 0.74) {
 
   return kept;
 }
-

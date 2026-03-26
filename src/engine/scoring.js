@@ -1,5 +1,5 @@
 import { ideaSimilarity } from "./dedupe.js";
-import { ideaToText, tokenize } from "../schema.js";
+import { ideaToMatchText, tokenize } from "../schema.js";
 import { scoreIdeaAgainstLiterature } from "../retrieval/literature.js";
 
 const EVIDENCE_FEASIBILITY = {
@@ -24,16 +24,26 @@ function average(values) {
 
 export function scoreIdea(idea, context = {}) {
   const visitedIdeas = context.visitedIdeas || [];
+  const acceptedIdeas = context.acceptedIdeas || context.state?.acceptedIdeas || [];
+  const rejectedIdeas = context.rejectedIdeas || context.state?.rejectedIdeas || [];
   const papers = context.papers || [];
   const keywords = context.state?.constraints?.keywords || [];
+  const acceptedIds = new Set(acceptedIdeas.map((candidate) => candidate.id).filter(Boolean));
+  const diversityPool = visitedIdeas.filter((candidate) => !acceptedIds.has(candidate.id));
 
-  const maxVisitedSimilarity = visitedIdeas.length
-    ? Math.max(...visitedIdeas.map((candidate) => ideaSimilarity(idea, candidate)))
+  const maxVisitedSimilarity = diversityPool.length
+    ? Math.max(...diversityPool.map((candidate) => ideaSimilarity(idea, candidate)))
+    : 0;
+  const acceptedAlignment = acceptedIdeas.length
+    ? Math.max(...acceptedIdeas.map((candidate) => ideaSimilarity(idea, candidate)))
+    : 0;
+  const rejectedAlignment = rejectedIdeas.length
+    ? Math.max(...rejectedIdeas.map((candidate) => ideaSimilarity(idea, candidate)))
     : 0;
 
-  const literatureMatch = scoreIdeaAgainstLiterature(ideaToText(idea), papers);
+  const literatureMatch = scoreIdeaAgainstLiterature(ideaToMatchText(idea), papers);
   const keywordTokens = new Set(tokenize(keywords.join(" ")));
-  const ideaTokens = new Set(tokenize(ideaToText(idea)));
+  const ideaTokens = new Set(tokenize(ideaToMatchText(idea)));
   const keywordHits = [...keywordTokens].filter((token) => ideaTokens.has(token)).length;
 
   const novelty = Number((1 - literatureMatch.overlap).toFixed(3));
@@ -69,7 +79,9 @@ export function scoreIdea(idea, context = {}) {
       0.2 * diversity +
       0.16 * feasibility +
       0.14 * userFit +
-      0.22 * creativity -
+      0.22 * creativity +
+      0.12 * acceptedAlignment -
+      0.18 * rejectedAlignment -
       critiquePenalty
     ).toFixed(3)
   );
@@ -80,6 +92,8 @@ export function scoreIdea(idea, context = {}) {
     feasibility,
     userFit,
     creativity,
+    acceptedAlignment: Number(acceptedAlignment.toFixed(3)),
+    rejectedAlignment: Number(rejectedAlignment.toFixed(3)),
     critiquePenalty,
     total,
     nearestPaperId: literatureMatch.nearestPaper?.id || null,

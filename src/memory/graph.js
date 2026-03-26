@@ -88,13 +88,24 @@ export function addPaperNode(graph, paper) {
 }
 
 export function addIdeaNode(graph, idea, status = "candidate") {
+  const existing = graph.nodes[ideaNodeId(idea.id)];
+  const persistedDecision = existing?.payload?.feedback?.decision;
+  const preservedStatus =
+    persistedDecision ||
+    (existing?.status === "accepted" || existing?.status === "rejected" ? existing.status : null);
+  const nextStatus = preservedStatus || status;
+
   return upsertNode(graph, {
     id: ideaNodeId(idea.id),
     kind: "idea",
     label: idea.title,
-    payload: idea,
+    payload: {
+      ...(existing?.payload || {}),
+      ...idea,
+      feedback: idea.feedback || existing?.payload?.feedback
+    },
     signature: idea.signature || buildIdeaSignature(idea),
-    status
+    status: nextStatus
   });
 }
 
@@ -129,8 +140,28 @@ export function collectVisitedIdeas(graph) {
     .map((node) => node.payload);
 }
 
+function collectIdeasByDecision(graph, decision) {
+  return Object.values(graph.nodes)
+    .filter((node) => {
+      if (node.kind !== "idea" || !node.payload) {
+        return false;
+      }
+
+      return node.payload.feedback?.decision === decision || node.status === decision;
+    })
+    .map((node) => node.payload);
+}
+
 export function collectIdeaNodes(graph) {
   return Object.values(graph.nodes).filter((node) => node.kind === "idea");
+}
+
+export function collectAcceptedIdeas(graph) {
+  return collectIdeasByDecision(graph, "accepted");
+}
+
+export function collectRejectedIdeas(graph) {
+  return collectIdeasByDecision(graph, "rejected");
 }
 
 export function collectVisitedSignatures(graph) {

@@ -1,7 +1,6 @@
-import { getClaim, getPuzzle } from "./domain/taxonomy.js";
+import { createHash } from "node:crypto";
 
-let nextIdeaId = 1;
-let nextSeedId = 1;
+import { getClaim, getPuzzle } from "./domain/taxonomy.js";
 
 export function normalizeText(value) {
   return String(value || "")
@@ -21,19 +20,31 @@ export function unique(values) {
   return [...new Set(values.filter(Boolean))];
 }
 
+function buildStableId(prefix, values) {
+  const digest = createHash("sha1")
+    .update(values.map((value) => normalizeText(value)).join("|"))
+    .digest("hex")
+    .slice(0, 12);
+
+  return `${prefix}-${digest}`;
+}
+
 export function buildIdeaSignature(idea) {
   return [
     normalizeText(idea.object),
     idea.puzzle.id,
     idea.claim.id,
     normalizeText(idea.contrast.axis),
+    normalizeText(idea.contrast.comparison),
     normalizeText(idea.evidence.kind),
     normalizeText(idea.scope.population),
-    normalizeText(idea.scope.place)
+    normalizeText(idea.scope.place),
+    normalizeText(idea.scope.time),
+    normalizeText(idea.scope.scale)
   ].join("|");
 }
 
-export function ideaToText(idea) {
+export function ideaToMatchText(idea) {
   return [
     idea.title,
     idea.object,
@@ -47,17 +58,39 @@ export function ideaToText(idea) {
     idea.scope.place,
     idea.scope.time,
     idea.scope.scale,
+    ...(idea.stakes || [])
+  ].join(" ");
+}
+
+export function ideaToSimilarityText(idea) {
+  return [
+    ideaToMatchText(idea),
     idea.rationale,
     idea.origin?.personaLabel,
-    idea.origin?.noveltyAngle,
-    idea.critique?.summary,
-    ...(idea.stakes || [])
+    idea.origin?.noveltyAngle
+  ].join(" ");
+}
+
+export function ideaToText(idea) {
+  return [
+    ideaToSimilarityText(idea),
+    idea.critique?.summary
   ].join(" ");
 }
 
 export function createBrainstormSeed(input) {
   return {
-    id: input.id || `seed-${nextSeedId++}`,
+    id:
+      input.id ||
+      buildStableId("seed", [
+        input.persona.id,
+        input.object,
+        input.hook,
+        input.pivot,
+        input.questionStem,
+        input.noveltyAngle,
+        ...(input.sourcePaperIds || [])
+      ]),
     persona: {
       id: input.persona.id,
       label: input.persona.label
@@ -89,7 +122,6 @@ export function createIdeaCard(input) {
   }
 
   const idea = {
-    id: input.id || `idea-${nextIdeaId++}`,
     title: input.title,
     object: input.object,
     puzzle,
@@ -126,9 +158,19 @@ export function createIdeaCard(input) {
     }
   };
 
+  const signature = buildIdeaSignature(idea);
+  const id =
+    input.id ||
+    buildStableId("idea", [
+      signature,
+      idea.origin?.personaId,
+      idea.title
+    ]);
+
   return {
+    id,
     ...idea,
-    signature: buildIdeaSignature(idea)
+    signature
   };
 }
 

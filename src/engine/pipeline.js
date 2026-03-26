@@ -5,6 +5,8 @@ import { dedupeIdeas } from "./dedupe.js";
 import { rankIdeas } from "./scoring.js";
 import { createResearchState } from "../schema.js";
 import {
+  collectAcceptedIdeas,
+  collectRejectedIdeas,
   collectVisitedIdeas,
   collectVisitedSignatures,
   createMemoryGraph,
@@ -57,7 +59,12 @@ export function runIdeaPipeline(input, papers, options = {}) {
   const state = createResearchState(input);
   const memoryGraph = options.memoryGraph || createMemoryGraph();
   const memoryVisitedIdeas = options.visitedIdeas || collectVisitedIdeas(memoryGraph);
+  const memoryAcceptedIdeas = options.acceptedIdeas || collectAcceptedIdeas(memoryGraph);
+  const memoryRejectedIdeas = options.rejectedIdeas || collectRejectedIdeas(memoryGraph);
   state.visitedSignatures = [...new Set([...state.visitedSignatures, ...collectVisitedSignatures(memoryGraph)])];
+  state.acceptedIdeas = [...state.acceptedIdeas, ...memoryAcceptedIdeas];
+  state.rejectedIdeas = [...state.rejectedIdeas, ...memoryRejectedIdeas];
+  state.history = [...state.history, ...memoryVisitedIdeas];
   const seeds = brainstormSeeds(state, papers, options);
   const rawIdeas = crystallizeSeeds(seeds, state, options);
   const dedupedIdeas = dedupeIdeas(rawIdeas);
@@ -68,7 +75,9 @@ export function runIdeaPipeline(input, papers, options = {}) {
   const rankedIdeas = rankIdeas(critiquedIdeas, {
     state,
     papers,
-    visitedIdeas: memoryVisitedIdeas
+    visitedIdeas: memoryVisitedIdeas,
+    acceptedIdeas: memoryAcceptedIdeas,
+    rejectedIdeas: memoryRejectedIdeas
   });
   const frontier = selectFrontierIdeas(rankedIdeas, options.frontierLimit || 6);
 

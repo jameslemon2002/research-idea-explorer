@@ -1,5 +1,5 @@
 import { ideaSimilarity } from "./dedupe.js";
-import { ideaToText } from "../schema.js";
+import { ideaToMatchText } from "../schema.js";
 import { scoreIdeaAgainstLiterature } from "../retrieval/literature.js";
 
 function critiqueIdea(idea, ideas, papers) {
@@ -30,7 +30,7 @@ function critiqueIdea(idea, ideas, papers) {
     penalty += 0.14;
   }
 
-  const literatureMatch = scoreIdeaAgainstLiterature(ideaToText(idea), papers);
+  const literatureMatch = scoreIdeaAgainstLiterature(ideaToMatchText(idea), papers);
   if (literatureMatch.overlap >= 0.38) {
     flags.push("crowded_literature");
     penalty += 0.16;
@@ -54,4 +54,3 @@ export function critiqueIdeas(ideas, context = {}) {
     critique: critiqueIdea(idea, ideas, papers)
   }));
 }
-

@@ -96,6 +96,57 @@ export function searchEmbedding(indexInput, query, limit = 5) {
     .slice(0, limit);
 }
 
+export function searchGraph(indexInput, query, options = {}) {
+  const index = ensureIndex(indexInput);
+  const limit = limitFromOptions(options);
+  const candidateLimit = Math.max(limit * 3, 8);
+  const seedLimit = options.seedLimit ?? Math.max(limit, 3);
+  const graphDecay = options.graphDecay ?? 0.85;
+  const seedWeight = options.seedWeight ?? 0.35;
+  const seedStrategy = options.seedStrategy || "embedding";
+  const seedHits =
+    seedStrategy === "lexical"
+      ? searchLexical(index, query, seedLimit)
+      : searchEmbedding(index, query, seedLimit);
+  const graphHits = expandHitsWithGraph(index, seedHits, {
+    decay: graphDecay,
+    limit: candidateLimit
+  });
+  const scores = new Map();
+
+  const upsert = (hit) => {
+    const current = scores.get(hit.paper.id) || {
+      paper: hit.paper,
+      score: 0,
+      components: {
+        lexical: 0,
+        embedding: 0,
+        graph: 0
+      }
+    };
+
+    current.paper = hit.paper;
+    current.components.lexical = Math.max(current.components.lexical, hit.components?.lexical || 0);
+    current.components.embedding = Math.max(current.components.embedding, hit.components?.embedding || 0);
+    current.components.graph = Math.max(current.components.graph, hit.components?.graph || 0);
+    current.score =
+      seedWeight * (current.components.lexical + current.components.embedding) + current.components.graph;
+    scores.set(hit.paper.id, current);
+  };
+
+  for (const hit of seedHits) {
+    upsert(hit);
+  }
+
+  for (const hit of graphHits) {
+    upsert(hit);
+  }
+
+  return [...scores.values()]
+    .sort((left, right) => right.score - left.score)
+    .slice(0, limit);
+}
+
 export function searchHybrid(indexInput, query, options = {}) {
   const index = ensureIndex(indexInput);
   const limit = limitFromOptions(options);
@@ -159,6 +210,13 @@ export function searchLiterature(indexInput, query, limitOrOptions = 5) {
 
   if (strategy === "embedding") {
     return searchEmbedding(index, query, limit);
+  }
+
+  if (strategy === "graph") {
+    return searchGraph(index, query, {
+      ...options,
+      limit
+    });
   }
 
   return searchHybrid(index, query, {
