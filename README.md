@@ -13,7 +13,7 @@
 ![Retrieval](https://img.shields.io/badge/Retrieval-Hybrid%20Search-F59E0B)
 ![Memory](https://img.shields.io/badge/Memory-Persistent%20JSON%20Graph-7C3AED)
 
-[中文说明](docs/README.zh.md) | [English Docs](docs/README.en.md) | [快速上手](docs/quickstart.zh.md) | [Quick Start](docs/quickstart.en.md) | [功能总览 / Feature Guide](docs/feature-guide.zh-en.md)
+[中文说明](docs/README.zh.md) | [English Docs](docs/README.en.md) | [快速上手](docs/quickstart.zh.md) | [Quick Start](docs/quickstart.en.md) | [功能总览 / Feature Guide](docs/feature-guide.zh-en.md) | [更新历史 / Changelog](CHANGELOG.md)
 
 </div>
 
@@ -32,6 +32,9 @@
 
 使用原则：
 除了 `graph`、`feedback`、输出说明这类纯功能调用外，研究生成相关调用会先检索文献，再进入脑暴与排序。
+
+更新记录：
+每次大的工作流、架构或产品层更新，都会记在 [`CHANGELOG.md`](CHANGELOG.md)。
 
 适配入口：
 - `CLI`

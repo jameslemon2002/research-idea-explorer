@@ -78,6 +78,7 @@ memory graph 支持这些检查视图：
 
 - [中文快速上手](./quickstart.zh.md)
 - [双语功能总览](./feature-guide.zh-en.md)
+- [更新历史](../CHANGELOG.md)
 - [项目首页](../README.md)
 
 ## 一条最短命令

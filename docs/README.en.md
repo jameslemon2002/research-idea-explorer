@@ -78,6 +78,7 @@ Memory graph inspection views:
 
 - [English Quick Start](./quickstart.en.md)
 - [Bilingual Feature Guide](./feature-guide.zh-en.md)
+- [Changelog](../CHANGELOG.md)
 - [Project Home](../README.md)
 
 ## Smallest useful command
