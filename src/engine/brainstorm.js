@@ -2,9 +2,24 @@ import { resolvePersonas } from "../domain/personas.js";
 import { createBrainstormSeed } from "../schema.js";
 import { searchLiterature } from "../retrieval/literature.js";
 
-function pickContrasts(state) {
+function pickContrasts(state, options = {}) {
   if (state.contrasts?.length) {
-    return state.contrasts.slice(0, 3);
+    const feedbackStrategy = options.feedbackStrategy || state.feedbackStrategy || {};
+    const rejectedComparisons = new Set(feedbackStrategy.rejectedComparisons || []);
+    const rejectedAxes = new Set(
+      (state.rejectedIdeas || []).map((idea) => idea.contrast?.axis).filter(Boolean)
+    );
+    const ordered = [...state.contrasts].sort((left, right) => {
+      const leftPenalty =
+        (rejectedComparisons.has(left.comparison) ? 2 : 0) +
+        (rejectedAxes.has(left.axis) ? 1 : 0);
+      const rightPenalty =
+        (rejectedComparisons.has(right.comparison) ? 2 : 0) +
+        (rejectedAxes.has(right.axis) ? 1 : 0);
+      return leftPenalty - rightPenalty;
+    });
+
+    return ordered.slice(0, 3);
   }
 
   return [{ axis: "default", comparison: "core subgroups and time periods" }];
@@ -32,7 +47,12 @@ function selectAnchorPaper(object, state, papers) {
 function selectLiteratureContexts(state, papers, options = {}) {
   const neighborhoods = options.literatureMap?.neighborhoods || [];
   if (neighborhoods.length) {
-    return neighborhoods;
+    const rejectedPaperIds = new Set(options.feedbackStrategy?.rejectedPaperIds || []);
+    return [...neighborhoods].sort((left, right) => {
+      const leftPenalty = rejectedPaperIds.has(left.anchorPaperId) ? 1 : 0;
+      const rightPenalty = rejectedPaperIds.has(right.anchorPaperId) ? 1 : 0;
+      return leftPenalty - rightPenalty;
+    });
   }
 
   const objects = state.focus?.objects || [];
@@ -64,7 +84,7 @@ function selectLiteratureContexts(state, papers, options = {}) {
 export function brainstormSeeds(state, papers, options = {}) {
   const objects = state.focus?.objects || [];
   const personas = resolvePersonas(options.personaIds || state.constraints?.personaIds || []);
-  const contrasts = pickContrasts(state);
+  const contrasts = pickContrasts(state, options);
   const literatureContexts = selectLiteratureContexts(state, papers, options);
   const seeds = [];
 

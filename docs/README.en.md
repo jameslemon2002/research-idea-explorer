@@ -40,6 +40,8 @@ except for pure utility actions such as `graph`, `feedback`, or output-format ex
 
 Memory continuation is topic-scoped by default, so unrelated topics can share one memory file without inheriting each other's accept/reject history. Use `--memory-scope global` only when you intentionally want cross-topic transfer.
 
+When a topic keeps getting rejected and still has no accepted direction, continuation shifts into a lateral reset: broader literature probing, a different contrast or family, and less pressure to over-shrink scope.
+
 ## Output shape
 
 Default research cards contain:

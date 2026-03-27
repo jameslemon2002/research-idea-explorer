@@ -62,6 +62,11 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 - 相近题目会延续同一段探索历史
 - 不同题目即使共用一个 memory 文件，也不会互相污染
 
+如果同一 topic 下连续 reject，且还没有 accept 方向，系统会自动改成 lateral reset：
+- 扩大文献图谱搜索范围
+- 优先换对比轴、idea family 和证据路径
+- 避免只是在同一路线上不断缩 scope
+
 如果你就是想让不同题目共享同一份 history，可以显式传：
 
 ```bash
@@ -116,6 +121,7 @@ npm run cli -- ideas --query "urban heat planning" --rounds 2
 - 默认检索模式是 `hybrid`
 - 默认搜索深度是 `1` 轮
 - 如果已经 accept 过某个方向，下一次继续推进会自动升级成 `2` 轮，除非你显式传 `--rounds 1`
+- 如果同一 topic 下连续 reject，系统会自动走 lateral reset，而不是只缩小 scope
 - 默认 memory scope 是 `topic`
 
 ## 如果你只记一条命令

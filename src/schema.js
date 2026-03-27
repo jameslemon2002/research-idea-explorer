@@ -369,6 +369,12 @@ export function createResearchState(input = {}) {
     scope: input.scope || {},
     stakes: input.stakes || [],
     topicProfile: buildTopicProfile(input),
+    feedbackStrategy: input.feedbackStrategy || {
+      mode: "default",
+      expandLaterally: false,
+      avoidOverNarrowing: false,
+      forceExtraRound: false
+    },
     visitedSignatures: input.visitedSignatures || [],
     acceptedIdeas: input.acceptedIdeas || [],
     rejectedIdeas: input.rejectedIdeas || [],

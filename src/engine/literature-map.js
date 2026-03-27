@@ -50,6 +50,17 @@ function dedupeQueries(querySpecs) {
   });
 }
 
+function extractAdjacentTerms(index, rejectedPaperIds = []) {
+  return unique(
+    rejectedPaperIds.flatMap((paperId) =>
+      getGraphNeighbors(index, paperId, 3).flatMap((neighbor) => [
+        ...(neighbor.paper.keywords || []),
+        ...tokenize(neighbor.paper.title).filter((term) => term.length > 3)
+      ])
+    )
+  ).slice(0, 4);
+}
+
 function extractFocusTerms(paper, queryRefs = []) {
   const keywordTerms = (paper.keywords || []).map((keyword) => String(keyword).trim()).filter(Boolean);
   const titleTerms = tokenize(paper.title)
@@ -91,6 +102,7 @@ export function buildLiteratureQuerySpecs(state, options = {}) {
   const keywords = state.constraints?.keywords || [];
   const stakes = state.stakes || [];
   const contrasts = state.contrasts || [];
+  const feedbackStrategy = options.feedbackStrategy || state.feedbackStrategy || {};
   const querySpecs = [];
 
   for (const object of objects) {
@@ -107,6 +119,36 @@ export function buildLiteratureQuerySpecs(state, options = {}) {
     for (const contrast of contrasts.slice(0, options.contrastQueryLimit || 3)) {
       pushQuery(querySpecs, `${object} ${contrast.comparison}`, `contrast:${contrast.axis}`, 1.1);
     }
+
+    if (feedbackStrategy.expandLaterally) {
+      const rejectedComparisons = new Set(feedbackStrategy.rejectedComparisons || []);
+      const lateralContrasts = contrasts.filter(
+        (contrast) => !rejectedComparisons.has(contrast.comparison)
+      );
+      for (const contrast of lateralContrasts.slice(0, options.escapeContrastLimit || 2)) {
+        pushQuery(querySpecs, `${object} ${contrast.comparison}`, `lateral:${contrast.axis}`, 1.2);
+      }
+
+      const adjacentTerms = extractAdjacentTerms(
+        options.index,
+        feedbackStrategy.rejectedPaperIds || []
+      );
+      if (adjacentTerms.length) {
+        pushQuery(
+          querySpecs,
+          `${object} ${adjacentTerms.join(" ")}`,
+          "adjacent neighborhood",
+          1.02
+        );
+      }
+
+      pushQuery(
+        querySpecs,
+        `${object} heterogeneity mechanism boundary`,
+        "lateral reset",
+        0.96
+      );
+    }
   }
 
   return dedupeQueries(querySpecs);
@@ -114,15 +156,25 @@ export function buildLiteratureQuerySpecs(state, options = {}) {
 
 export function buildLiteratureMap(state, indexInput, options = {}) {
   const index = indexInput?.paperMap ? indexInput : buildLiteratureIndex(indexInput || []);
-  const querySpecs = options.querySpecs || buildLiteratureQuerySpecs(state, options);
+  const querySpecs =
+    options.querySpecs || buildLiteratureQuerySpecs(state, { ...options, index });
   const trace = traceLiteratureQueries(index, querySpecs, {
     perQueryLimit: options.perQueryLimit || 4,
     limit: options.limit || 8,
     strategy: options.strategy || options.searchStrategy || "hybrid"
   });
+  const rejectedPaperIds = new Set(options.feedbackStrategy?.rejectedPaperIds || []);
   const neighborhoods = trace.mergedHits
-    .slice(0, options.anchorLimit || 4)
-    .map((hit) => buildNeighborhood(index, hit, trace, options));
+    .map((hit) => buildNeighborhood(index, hit, trace, options))
+    .sort((left, right) => {
+      const leftPenalty = rejectedPaperIds.has(left.anchorPaperId) ? 1 : 0;
+      const rightPenalty = rejectedPaperIds.has(right.anchorPaperId) ? 1 : 0;
+      if (leftPenalty !== rightPenalty) {
+        return leftPenalty - rightPenalty;
+      }
+      return right.score - left.score;
+    })
+    .slice(0, options.anchorLimit || 4);
 
   return {
     strategy: options.strategy || options.searchStrategy || "hybrid",

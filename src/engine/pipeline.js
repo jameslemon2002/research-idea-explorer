@@ -15,6 +15,46 @@ import {
   recordPipelineRun
 } from "../memory/graph.js";
 
+function buildFeedbackStrategy(acceptedIdeas = [], rejectedIdeas = []) {
+  const acceptedCount = acceptedIdeas.length;
+  const rejectedCount = rejectedIdeas.length;
+  const rejectedFamilies = [...new Set(rejectedIdeas.map((idea) => idea.familyId).filter(Boolean))];
+  const rejectedComparisons = [
+    ...new Set(rejectedIdeas.map((idea) => idea.contrast?.comparison).filter(Boolean))
+  ];
+  const rejectedEvidenceKinds = [
+    ...new Set(rejectedIdeas.map((idea) => idea.evidence?.kind).filter(Boolean))
+  ];
+  const rejectedPaperIds = [
+    ...new Set(
+      rejectedIdeas
+        .map(
+          (idea) =>
+            idea.scores?.nearestPaperId ||
+            idea.critique?.nearestPaperId ||
+            idea.literatureTrace?.nearestPaperId ||
+            idea.origin?.sourcePaperIds?.[0]
+        )
+        .filter(Boolean)
+    )
+  ];
+  const hardReset = rejectedCount >= 2 && acceptedCount === 0;
+  const lateralExpand = hardReset || (rejectedCount >= 2 && rejectedCount >= acceptedCount);
+
+  return {
+    mode: hardReset ? "lateral_reset" : lateralExpand ? "lateral_expand" : acceptedCount ? "deepen" : "default",
+    acceptedCount,
+    rejectedCount,
+    expandLaterally: lateralExpand,
+    avoidOverNarrowing: lateralExpand,
+    forceExtraRound: hardReset,
+    rejectedFamilies,
+    rejectedComparisons,
+    rejectedEvidenceKinds,
+    rejectedPaperIds
+  };
+}
+
 export function selectFrontierIdeas(rankedIdeas, limit = 6) {
   const selected = [];
   const usedFamilies = new Set();
@@ -80,10 +120,17 @@ export function runIdeaPipeline(input, papers, options = {}) {
   const memoryVisitedIdeas = options.visitedIdeas || collectVisitedIdeas(memoryGraph, memoryScopeOptions);
   const memoryAcceptedIdeas = options.acceptedIdeas || collectAcceptedIdeas(memoryGraph, memoryScopeOptions);
   const memoryRejectedIdeas = options.rejectedIdeas || collectRejectedIdeas(memoryGraph, memoryScopeOptions);
+  const feedbackStrategy =
+    options.feedbackStrategy || buildFeedbackStrategy(memoryAcceptedIdeas, memoryRejectedIdeas);
   const requestedRounds = Number(options.rounds || 0);
   const effectiveRounds =
-    requestedRounds >= 1 ? Math.min(2, requestedRounds) : memoryAcceptedIdeas.length ? 2 : 1;
+    requestedRounds >= 1
+      ? Math.min(2, requestedRounds)
+      : memoryAcceptedIdeas.length || feedbackStrategy.forceExtraRound
+        ? 2
+        : 1;
   state.topicProfile = topicProfile;
+  state.feedbackStrategy = feedbackStrategy;
   state.visitedSignatures = [
     ...new Set([...state.visitedSignatures, ...collectVisitedSignatures(memoryGraph, memoryScopeOptions)])
   ];
@@ -92,14 +139,16 @@ export function runIdeaPipeline(input, papers, options = {}) {
   state.history = [...state.history, ...memoryVisitedIdeas];
   const literatureMap = buildLiteratureMap(state, papers, {
     strategy: searchStrategy,
-    limit: options.literatureMapLimit || 8,
-    anchorLimit: options.literatureAnchorLimit || 4,
-    perQueryLimit: options.literaturePerQueryLimit || 4
+    feedbackStrategy,
+    limit: options.literatureMapLimit || (feedbackStrategy.expandLaterally ? 10 : 8),
+    anchorLimit: options.literatureAnchorLimit || (feedbackStrategy.expandLaterally ? 5 : 4),
+    perQueryLimit: options.literaturePerQueryLimit || (feedbackStrategy.expandLaterally ? 5 : 4)
   });
   const initialSeeds = brainstormSeeds(state, papers, {
     ...options,
+    feedbackStrategy,
     literatureMap,
-    limit: options.initialSeedLimit || options.limit || 36
+    limit: options.initialSeedLimit || options.limit || (feedbackStrategy.expandLaterally ? 42 : 36)
   });
   const initialRawIdeas = crystallizeSeeds(initialSeeds, state, {
     ...options,
@@ -119,18 +168,22 @@ export function runIdeaPipeline(input, papers, options = {}) {
     acceptedIdeas: memoryAcceptedIdeas,
     rejectedIdeas: memoryRejectedIdeas,
     literatureMap,
+    feedbackStrategy,
     searchStrategy
   });
   const firstFocus = selectFrontierIdeas(
     initialRankedIdeas,
-    effectiveRounds >= 2 ? options.intermediateFrontierLimit || 4 : options.frontierLimit || 6
+    effectiveRounds >= 2
+      ? options.intermediateFrontierLimit || (feedbackStrategy.expandLaterally ? 5 : 4)
+      : options.frontierLimit || 6
   );
   const mutationRound =
     effectiveRounds >= 2
       ? buildMutationRound(firstFocus, state, papers, {
+          feedbackStrategy,
           strategy: searchStrategy,
-          perQueryLimit: options.mutationPerQueryLimit || 4,
-          limit: options.mutationLiteratureLimit || 6,
+          perQueryLimit: options.mutationPerQueryLimit || (feedbackStrategy.expandLaterally ? 5 : 4),
+          limit: options.mutationLiteratureLimit || (feedbackStrategy.expandLaterally ? 8 : 6),
           ideaLimit: options.mutationIdeaLimit || firstFocus.length
         })
       : {
@@ -168,6 +221,7 @@ export function runIdeaPipeline(input, papers, options = {}) {
           acceptedIdeas: memoryAcceptedIdeas,
           rejectedIdeas: memoryRejectedIdeas,
           literatureMap,
+          feedbackStrategy,
           searchStrategy
         })
       : initialRankedIdeas;
@@ -180,6 +234,7 @@ export function runIdeaPipeline(input, papers, options = {}) {
     {
       query: options.query,
       state,
+      feedbackStrategy,
       topicProfile,
       rankedIdeas,
       frontier,
@@ -212,6 +267,7 @@ export function runIdeaPipeline(input, papers, options = {}) {
 
   return {
     state,
+    feedbackStrategy,
     topicProfile,
     memoryScope,
     literatureMap,

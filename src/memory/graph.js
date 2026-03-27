@@ -233,6 +233,13 @@ export function recordPipelineRun(graph, payload, options = {}) {
   const query = payload.query || payload.state?.focus?.objects?.join(" ") || payload.state?.focus?.domain || "query";
   const queryNode = addQueryNode(graph, query, {
     topicProfile: payload.topicProfile,
+    feedbackStrategy: payload.feedbackStrategy
+      ? {
+          mode: payload.feedbackStrategy.mode,
+          acceptedCount: payload.feedbackStrategy.acceptedCount,
+          rejectedCount: payload.feedbackStrategy.rejectedCount
+        }
+      : null,
     literatureMap: payload.literatureMap
       ? {
           strategy: payload.literatureMap.strategy,

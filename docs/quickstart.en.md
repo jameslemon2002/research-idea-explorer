@@ -62,6 +62,11 @@ By default, memory continuation is topic-scoped:
 - nearby topics can continue from each other
 - unrelated topics in the same memory file do not cross-contaminate
 
+If the same topic keeps getting rejected and there is still no accepted direction, the system automatically switches into a lateral reset:
+- widen the literature map instead of staring at the same top papers
+- prefer a different contrast, idea family, or evidence lane
+- avoid treating "more original" as "just make the scope smaller"
+
 If you want one shared global history instead:
 
 ```bash
@@ -116,6 +121,7 @@ Search literature first and give me one strong frontier. If we find a promising 
 - the default retrieval mode is `hybrid`
 - the default search depth is `1` round
 - accepted directions automatically trigger `2` rounds on the next continuation unless you pass `--rounds 1`
+- repeated rejection on the same topic triggers a lateral reset instead of a narrower continuation
 - the default memory scope is `topic`
 
 ## If you remember only one command

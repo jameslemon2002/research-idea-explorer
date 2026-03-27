@@ -40,6 +40,8 @@
 
 默认情况下，memory continuation 会按 topic scope 隔离，所以不同题目可以共用一个 memory 文件而不继承彼此的 accept/reject 历史。只有你明确想跨题目迁移经验时，才建议用 `--memory-scope global`。
 
+如果某个 topic 连续被 reject，且还没有形成 accepted 方向，系统会自动切到 lateral reset：扩大文献探测范围、优先换 contrast 或 family，并降低“把 scope 缩得更小”这类本能反应。
+
 ## 输出内容
 
 默认 research card 包含：

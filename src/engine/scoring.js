@@ -26,9 +26,13 @@ export function scoreIdea(idea, context = {}) {
   const visitedIdeas = context.visitedIdeas || [];
   const acceptedIdeas = context.acceptedIdeas || context.state?.acceptedIdeas || [];
   const rejectedIdeas = context.rejectedIdeas || context.state?.rejectedIdeas || [];
+  const feedbackStrategy = context.feedbackStrategy || context.state?.feedbackStrategy || {};
   const papers = context.papers || [];
   const keywords = context.state?.constraints?.keywords || [];
   const acceptedIds = new Set(acceptedIdeas.map((candidate) => candidate.id).filter(Boolean));
+  const rejectedFamilies = new Set(feedbackStrategy.rejectedFamilies || []);
+  const rejectedComparisons = new Set(feedbackStrategy.rejectedComparisons || []);
+  const rejectedEvidenceKinds = new Set(feedbackStrategy.rejectedEvidenceKinds || []);
   const diversityPool = visitedIdeas.filter((candidate) => !acceptedIds.has(candidate.id));
   const priorFamilies = new Set(visitedIdeas.map((candidate) => candidate.familyId).filter(Boolean));
 
@@ -55,7 +59,13 @@ export function scoreIdea(idea, context = {}) {
       value && !String(value).startsWith("unspecified") ? 1 : 0
     )
   );
-  const feasibility = Number((0.7 * feasibilityBase + 0.3 * scopeBonus).toFixed(3));
+  const feasibility = Number(
+    (
+      feedbackStrategy.avoidOverNarrowing
+        ? 0.85 * feasibilityBase + 0.15 * scopeBonus
+        : 0.7 * feasibilityBase + 0.3 * scopeBonus
+    ).toFixed(3)
+  );
   const userFit = Number(
     (
       keywordTokens.size === 0 ? 0.75 : Math.min(1, keywordHits / Math.max(keywordTokens.size, 1))
@@ -74,17 +84,44 @@ export function scoreIdea(idea, context = {}) {
   );
   const grounding = literatureTrace.grounding;
   const critiquePenalty = idea.critique?.penalty || 0;
+  const lateralEscape = Number(
+    (
+      feedbackStrategy.expandLaterally
+        ? (1 - rejectedAlignment) * (!priorFamilies.has(idea.familyId) ? 1 : 0.7)
+        : 0
+    ).toFixed(3)
+  );
+  const rejectedLanePenalty = Number(
+    (
+      feedbackStrategy.expandLaterally
+        ? (rejectedFamilies.has(idea.familyId) ? 0.12 : 0) +
+          (rejectedComparisons.has(idea.contrast?.comparison) ? 0.12 : 0) +
+          (rejectedEvidenceKinds.has(idea.evidence?.kind) ? 0.06 : 0)
+        : 0
+    ).toFixed(3)
+  );
+  const noveltyWeight = feedbackStrategy.expandLaterally ? 0.24 : 0.22;
+  const diversityWeight = feedbackStrategy.expandLaterally ? 0.24 : 0.18;
+  const feasibilityWeight = feedbackStrategy.avoidOverNarrowing ? 0.1 : 0.15;
+  const userFitWeight = feedbackStrategy.expandLaterally ? 0.1 : 0.12;
+  const creativityWeight = feedbackStrategy.expandLaterally ? 0.18 : 0.15;
+  const groundingWeight = feedbackStrategy.expandLaterally ? 0.09 : 0.1;
+  const acceptedAlignmentWeight = feedbackStrategy.expandLaterally ? 0.04 : 0.11;
+  const rejectedAlignmentWeight = feedbackStrategy.expandLaterally ? 0.22 : 0.16;
+  const lateralEscapeWeight = feedbackStrategy.expandLaterally ? 0.11 : 0;
 
   const total = Number(
     (
-      0.22 * novelty +
-      0.18 * diversity +
-      0.15 * feasibility +
-      0.12 * userFit +
-      0.15 * creativity +
-      0.1 * grounding +
-      0.11 * acceptedAlignment -
-      0.16 * rejectedAlignment -
+      noveltyWeight * novelty +
+      diversityWeight * diversity +
+      feasibilityWeight * feasibility +
+      userFitWeight * userFit +
+      creativityWeight * creativity +
+      groundingWeight * grounding +
+      acceptedAlignmentWeight * acceptedAlignment +
+      lateralEscapeWeight * lateralEscape -
+      rejectedAlignmentWeight * rejectedAlignment -
+      rejectedLanePenalty -
       critiquePenalty
     ).toFixed(3)
   );
@@ -98,6 +135,8 @@ export function scoreIdea(idea, context = {}) {
     grounding,
     acceptedAlignment: Number(acceptedAlignment.toFixed(3)),
     rejectedAlignment: Number(rejectedAlignment.toFixed(3)),
+    lateralEscape,
+    rejectedLanePenalty,
     critiquePenalty,
     total,
     nearestPaperId: literatureTrace.nearestPaperId || null,

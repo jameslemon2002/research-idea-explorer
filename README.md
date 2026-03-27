@@ -155,6 +155,11 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 - `urban heat adaptation` 和 `urban heat planning` 这类相近题目会延续
 - `urban heat adaptation` 和 `corporate finance productivity` 这类不同题目不会互相污染
 
+如果同一 topic 下连续被 reject，且还没有形成 `accepted` 方向，系统会自动进入 lateral reset：
+- 扩大 literature map，而不是只盯着同一组 top papers
+- 优先换 contrast / family / evidence lane，而不是继续把 scope 越收越窄
+- 自动补一轮更侧向的 mutation retrieval，试着从邻近文献簇重新开题
+
 如果你就是想让不同题目共享同一份 history，可以显式传：
 
 ```bash

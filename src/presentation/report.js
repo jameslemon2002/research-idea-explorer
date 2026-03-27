@@ -17,11 +17,17 @@ function formatLiteratureLoop(pipeline) {
   const firstFocus = pipeline.rounds?.firstFocus?.frontier || [];
   const neighborhoods = pipeline.literatureMap?.neighborhoods || [];
   const effectiveRounds = pipeline.effectiveRounds || (mutation?.seeds?.length ? 2 : 1);
+  const feedbackStrategy = pipeline.feedbackStrategy || {};
 
   lines.push(`- Search depth: ${effectiveRounds} round${effectiveRounds > 1 ? "s" : ""}`);
   lines.push(
     `- Initial map: ${pipeline.literatureMap?.queryCount || 0} queries -> ${neighborhoods.length} literature neighborhoods`
   );
+  if (feedbackStrategy.mode === "lateral_reset") {
+    lines.push(`- Feedback pressure: repeated rejection triggered a lateral reset instead of a narrower continuation`);
+  } else if (feedbackStrategy.mode === "lateral_expand") {
+    lines.push(`- Feedback pressure: the system widened the search away from previously rejected directions`);
+  }
 
   if (effectiveRounds >= 2) {
     lines.push(`- First focus: ${firstFocus.length} idea families retained for the second pass`);
@@ -103,6 +109,7 @@ export function buildJsonResult(result, memoryPath) {
       effectiveRounds: result.pipeline.effectiveRounds,
       memoryScope: result.pipeline.memoryScope,
       topicProfile: result.pipeline.topicProfile,
+      feedbackStrategy: result.pipeline.feedbackStrategy,
       errors: result.errors.map((item) => ({
         provider: item.provider,
         message: item.error.message

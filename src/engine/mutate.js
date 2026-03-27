@@ -35,12 +35,20 @@ const EVIDENCE_HINT_PATTERNS = [
   { pattern: /(text|corpus|transcript|discourse|language)/i, kind: "text_corpus" }
 ];
 
-function buildMutationQuerySpecs(idea, state, paperMap) {
+function buildMutationQuerySpecs(idea, state, paperMap, options = {}) {
   const keywords = state.constraints?.keywords || [];
+  const feedbackStrategy = options.feedbackStrategy || state.feedbackStrategy || {};
   const anchorPaper =
     paperMap.get(idea.scores?.nearestPaperId) ||
     paperMap.get(idea.critique?.nearestPaperId) ||
     paperMap.get(idea.origin?.sourcePaperIds?.[0]);
+  const rejectedComparisons = new Set(feedbackStrategy.rejectedComparisons || []);
+  const lateralContrast = (state.contrasts || []).find(
+    (contrast) =>
+      contrast?.comparison &&
+      contrast.comparison !== idea.contrast?.comparison &&
+      !rejectedComparisons.has(contrast.comparison)
+  );
   const queries = [
     {
       label: "family contrast",
@@ -53,6 +61,14 @@ function buildMutationQuerySpecs(idea, state, paperMap) {
       weight: 1.15
     }
   ];
+
+  if (feedbackStrategy.expandLaterally && lateralContrast) {
+    queries.unshift({
+      label: "lateral contrast",
+      query: `${idea.object} ${lateralContrast.comparison}`,
+      weight: 1.34
+    });
+  }
 
   if (keywords.length) {
     queries.push({
@@ -76,6 +92,14 @@ function buildMutationQuerySpecs(idea, state, paperMap) {
     weight: 0.8
   });
 
+  if (feedbackStrategy.expandLaterally) {
+    queries.push({
+      label: "lateral reset",
+      query: `${idea.object} heterogeneity mechanism alternative explanation`,
+      weight: 0.98
+    });
+  }
+
   return queries;
 }
 
@@ -94,10 +118,16 @@ function inferEvidenceHints(trace, fallback = []) {
   return unique([...fallback, ...inferred]).slice(0, 4);
 }
 
-function selectMutationContrast(idea, state, index = 0) {
-  const alternatives = (state.contrasts || []).filter(
-    (contrast) => contrast.comparison !== idea.contrast?.comparison
-  );
+function selectMutationContrast(idea, state, options = {}, index = 0) {
+  const feedbackStrategy = options.feedbackStrategy || state.feedbackStrategy || {};
+  const rejectedComparisons = new Set(feedbackStrategy.rejectedComparisons || []);
+  const alternatives = (state.contrasts || [])
+    .filter((contrast) => contrast.comparison !== idea.contrast?.comparison)
+    .sort((left, right) => {
+      const leftPenalty = rejectedComparisons.has(left.comparison) ? 1 : 0;
+      const rightPenalty = rejectedComparisons.has(right.comparison) ? 1 : 0;
+      return leftPenalty - rightPenalty;
+    });
 
   return alternatives[index % Math.max(alternatives.length, 1)] || idea.contrast;
 }
@@ -127,10 +157,21 @@ export function buildMutationRound(frontier, state, papers, options = {}) {
   const paperMap = new Map(paperList.map((paper) => [paper.id, paper]));
   const seeds = [];
   const traces = [];
-  const targetIdeas = frontier.slice(0, options.ideaLimit || 4);
+  const feedbackStrategy = options.feedbackStrategy || state.feedbackStrategy || {};
+  const rejectedEvidenceKinds = new Set(feedbackStrategy.rejectedEvidenceKinds || []);
+  const targetIdeas = [...frontier]
+    .sort((left, right) => {
+      const leftRejected = left.scores?.rejectedAlignment || 0;
+      const rightRejected = right.scores?.rejectedAlignment || 0;
+      if (leftRejected !== rightRejected) {
+        return leftRejected - rightRejected;
+      }
+      return (right.scores?.diversity || 0) - (left.scores?.diversity || 0);
+    })
+    .slice(0, options.ideaLimit || 4);
 
   for (const [ideaIndex, idea] of targetIdeas.entries()) {
-    const literatureQueries = buildMutationQuerySpecs(idea, state, paperMap);
+    const literatureQueries = buildMutationQuerySpecs(idea, state, paperMap, options);
     const trace = traceLiteratureQueries(papers, literatureQueries, {
       perQueryLimit: options.perQueryLimit || 4,
       limit: options.limit || 6,
@@ -142,7 +183,13 @@ export function buildMutationRound(frontier, state, papers, options = {}) {
       idea.evidence.kind,
       ...(state.constraints?.evidenceKinds || [])
     ]);
-    const mutationContrast = selectMutationContrast(idea, state, ideaIndex);
+    const orderedEvidenceHints = feedbackStrategy.expandLaterally
+      ? unique([
+          ...evidenceHints.filter((kind) => !rejectedEvidenceKinds.has(kind)),
+          ...evidenceHints.filter((kind) => rejectedEvidenceKinds.has(kind))
+        ]).slice(0, 4)
+      : evidenceHints;
+    const mutationContrast = selectMutationContrast(idea, state, options, ideaIndex);
     const anchorTitle = trace.mergedHits[0]?.paper?.title || idea.title;
     const persona = {
       id: idea.origin?.personaId || "literature_mutation",
@@ -173,7 +220,7 @@ export function buildMutationRound(frontier, state, papers, options = {}) {
         suggestedPuzzles,
         suggestedClaims,
         contrastSuggestions: dedupeContrasts([mutationContrast, idea.contrast, ...(state.contrasts || [])]),
-        evidenceHints,
+        evidenceHints: orderedEvidenceHints,
         sourcePaperIds,
         literatureQueries,
         focusTerms,
@@ -195,7 +242,7 @@ export function buildMutationRound(frontier, state, papers, options = {}) {
         suggestedPuzzles: unique([idea.puzzle.id, "mechanism_unknown", "distortion"]),
         suggestedClaims: unique([idea.claim.id, "explain", "measure"]),
         contrastSuggestions: dedupeContrasts([idea.contrast, mutationContrast, ...(state.contrasts || [])]),
-        evidenceHints,
+        evidenceHints: orderedEvidenceHints,
         sourcePaperIds,
         literatureQueries,
         focusTerms,
@@ -205,6 +252,30 @@ export function buildMutationRound(frontier, state, papers, options = {}) {
         tags: [state.focus?.domain, idea.familyId, idea.id, "mutation_evidence"]
       })
     );
+
+    if (feedbackStrategy.expandLaterally) {
+      seeds.push(
+        createBrainstormSeed({
+          persona,
+          object: idea.object,
+          hook: `Repeated pushback suggests ${idea.object} needs a neighboring literature pocket rather than a tighter version of the same framing.`,
+          pivot: `leave the criticized lane and reopen the topic through a different comparison, mechanism, or evidence bridge`,
+          questionStem: `What if ${idea.object} becomes more original only after moving away from ${idea.contrast.comparison} and reopening the problem through ${mutationContrast.comparison}?`,
+          noveltyAngle: `Use repeated rejection as a cue to side-step into a different research family instead of shrinking the same scope.`,
+          suggestedPuzzles: unique([...(PUZZLE_MUTATIONS[idea.puzzle.id] || []), "boundary_unknown", "distortion"]),
+          suggestedClaims: unique([...(CLAIM_MUTATIONS[idea.claim.id] || []), "compare", "measure"]),
+          contrastSuggestions: dedupeContrasts([mutationContrast, ...(state.contrasts || []), idea.contrast]),
+          evidenceHints: orderedEvidenceHints,
+          sourcePaperIds,
+          literatureQueries,
+          focusTerms,
+          round: "mutation",
+          stage: "mutate",
+          parentIdeaId: idea.id,
+          tags: [state.focus?.domain, idea.familyId, idea.id, "mutation_escape"]
+        })
+      );
+    }
   }
 
   return {
