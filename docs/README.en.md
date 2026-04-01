@@ -83,9 +83,17 @@ Memory graph inspection views:
 
 ## Smallest useful command
 
+The local CLI only needs `Node.js 18+`. You do not need `npm install` for this repo-local workflow, and this project is not distributed via `pip install`.
+
 ```bash
-npm install
-npm run cli -- ideas --query "urban heat planning"
+node src/cli.js ideas --query "urban heat planning"
+```
+
+If you want a machine-wide install that other users can set up the same way, from the repo root:
+
+```bash
+npm install -g .
+research-idea-explorer install codex-skill
 ```
 
 ## Codex / Skill example

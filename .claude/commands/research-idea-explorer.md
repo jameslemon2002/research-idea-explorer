@@ -1,5 +1,12 @@
 Turn the user's topic into brainstorm seeds first, then structured research idea cards.
 
+If the packaged CLI is available on the machine, prefer using:
+
+- `research-idea-explorer`
+- or `rie`
+
+If not, but the repository is present in the workspace, fall back to `node src/cli.js`.
+
 Use this schema for every idea:
 
 - `Object`

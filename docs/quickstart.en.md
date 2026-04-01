@@ -4,16 +4,29 @@
 
 ## Get running in 5 minutes
 
-### 1. Install
+### 1. Check your environment
 
 ```bash
-npm install
+node --version
 ```
+
+You only need `Node.js 18+`.
+This repository currently has no extra npm dependencies, so you can run it directly from the repo root without `npm install`, and it is not a `pip install` package.
+
+If you want a reusable machine-wide install for other users or other workspaces, you can also install it globally:
+
+```bash
+npm install -g .
+```
+
+This provides two command names:
+- `research-idea-explorer`
+- `rie`
 
 ### 2. Generate your first round of ideas
 
 ```bash
-npm run cli -- ideas --query "urban heat planning"
+node src/cli.js ideas --query "urban heat planning"
 ```
 
 This command will:
@@ -27,19 +40,19 @@ This command will:
 If you want the deeper two-round mode:
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --rounds 2
+node src/cli.js ideas --query "urban heat planning" --rounds 2
 ```
 
 ### 3. Inspect memory state
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json
+node src/cli.js graph --memory ./data/memory/cli-memory.json
 ```
 
 To list the most recent ideas:
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ### 4. Accept a direction and continue
@@ -47,13 +60,13 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 First list the generated ideas:
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json
+node src/cli.js feedback --memory ./data/memory/cli-memory.json
 ```
 
 Then accept one:
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
+node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
 Then run `ideas` again to continue from the updated memory graph. If the memory graph already contains an `accepted` idea, the next `ideas` run automatically upgrades to two rounds unless you pass `--rounds 1`.
@@ -70,7 +83,7 @@ If the same topic keeps getting rejected and there is still no accepted directio
 If you want one shared global history instead:
 
 ```bash
-npm run cli -- ideas --query "your topic here" --memory-scope global
+node src/cli.js ideas --query "your topic here" --memory-scope global
 ```
 
 ## Common patterns
@@ -78,40 +91,73 @@ npm run cli -- ideas --query "your topic here" --memory-scope global
 ### Specify literature sources
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
 ```
 
 ### Use a local paper library
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --providers local --local-library-path ./data/library.json
+node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.json
 ```
 
 ### Prefer semantic retrieval
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --search-strategy embedding
+node src/cli.js ideas --query "urban heat planning" --search-strategy embedding
 ```
 
 ### Prefer neighborhood expansion
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --search-strategy graph
+node src/cli.js ideas --query "urban heat planning" --search-strategy graph
 ```
 
 ### Force the deeper two-round search
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --rounds 2
+node src/cli.js ideas --query "urban heat planning" --rounds 2
 ```
 
 ## Use it in Codex
+
+Codex uses the skill surface, which is separate from the local CLI.
+If you installed the package globally, run:
+
+```bash
+research-idea-explorer install codex-skill
+```
+
+If you are still working from the repo checkout, you can also run:
+
+```bash
+node src/cli.js install codex-skill
+```
 
 After restarting Codex, you can say:
 
 ```text
 Use $research-idea-explorer to generate research directions around “urban heat adaptation”.
 Search literature first and give me one strong frontier. If we find a promising direction, branch again through adjacent literature.
+```
+
+## Use it in Claude Code
+
+If you installed the package globally, install the command into the target project:
+
+```bash
+research-idea-explorer install claude-command --project /path/to/your-project
+```
+
+If you are still working from the repo checkout, you can also run:
+
+```bash
+node src/cli.js install claude-command --project /path/to/your-project
+```
+
+Then inside that project, run:
+
+```text
+/research-idea-explorer
 ```
 
 ## Default rules
@@ -127,5 +173,5 @@ Search literature first and give me one strong frontier. If we find a promising 
 ## If you remember only one command
 
 ```bash
-npm run cli -- ideas --query "your topic here"
+node src/cli.js ideas --query "your topic here"
 ```

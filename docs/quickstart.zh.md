@@ -4,16 +4,29 @@
 
 ## 5 分钟上手
 
-### 1. 安装
+### 1. 准备环境
 
 ```bash
-npm install
+node --version
 ```
+
+只需要 `Node.js 18+`。
+这个仓库当前没有额外 npm 依赖，所以在仓库根目录直接运行即可，不需要 `npm install`，也不支持 `pip install`。
+
+如果你想给别的用户或别的机器装成“全局可调用”的版本，可以先执行：
+
+```bash
+npm install -g .
+```
+
+然后用全局命令：
+- `research-idea-explorer`
+- `rie`
 
 ### 2. 直接生成第一轮 ideas
 
 ```bash
-npm run cli -- ideas --query "urban heat planning"
+node src/cli.js ideas --query "urban heat planning"
 ```
 
 这条命令会：
@@ -27,19 +40,19 @@ npm run cli -- ideas --query "urban heat planning"
 如果你想显式打开双轮深挖：
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --rounds 2
+node src/cli.js ideas --query "urban heat planning" --rounds 2
 ```
 
 ### 3. 看 memory 概览
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json
+node src/cli.js graph --memory ./data/memory/cli-memory.json
 ```
 
 如果你想看最近生成的 ideas：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ### 4. 接受一个方向，继续推进
@@ -47,13 +60,13 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
 先列出已生成的 ideas：
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json
+node src/cli.js feedback --memory ./data/memory/cli-memory.json
 ```
 
 接受其中一个：
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
+node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
 然后再跑一轮 `ideas`，系统会结合已有 memory graph 继续推进。如果 memory 里已经有 `accepted` 方向，下一次 `ideas` 会自动升级成两轮深挖；如果你只想保持单轮，可以显式传 `--rounds 1`。
@@ -70,7 +83,7 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 如果你就是想让不同题目共享同一份 history，可以显式传：
 
 ```bash
-npm run cli -- ideas --query "your topic here" --memory-scope global
+node src/cli.js ideas --query "your topic here" --memory-scope global
 ```
 
 ## 常见用法
@@ -78,40 +91,73 @@ npm run cli -- ideas --query "your topic here" --memory-scope global
 ### 指定文献源
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
 ```
 
 ### 使用本地文献库
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --providers local --local-library-path ./data/library.json
+node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.json
 ```
 
 ### 强调语义检索
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --search-strategy embedding
+node src/cli.js ideas --query "urban heat planning" --search-strategy embedding
 ```
 
 ### 强调邻域扩展
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --search-strategy graph
+node src/cli.js ideas --query "urban heat planning" --search-strategy graph
 ```
 
 ### 显式打开双轮深挖
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --rounds 2
+node src/cli.js ideas --query "urban heat planning" --rounds 2
 ```
 
 ## 在 Codex 里使用
+
+Codex 这里走的是 skill，用法和本地 CLI 分开。
+如果已经做了全局安装，直接执行：
+
+```bash
+research-idea-explorer install codex-skill
+```
+
+如果你还在当前仓库里本地调试，也可以执行：
+
+```bash
+node src/cli.js install codex-skill
+```
 
 重启 Codex 后，可以直接说：
 
 ```text
 用 $research-idea-explorer 围绕 “urban heat adaptation” 生成一轮研究方向。
 先检索相关文献，先给我一轮强一点的 frontier；如果里面有值得继续的方向，再沿相邻文献做第二轮深挖。
+```
+
+## 在 Claude Code 里使用
+
+如果已经做了全局安装，直接把命令装进目标项目：
+
+```bash
+research-idea-explorer install claude-command --project /path/to/your-project
+```
+
+如果你还在当前仓库里本地调试，也可以执行：
+
+```bash
+node src/cli.js install claude-command --project /path/to/your-project
+```
+
+之后在该项目里直接：
+
+```text
+/research-idea-explorer
 ```
 
 ## 默认规则
@@ -127,5 +173,5 @@ npm run cli -- ideas --query "urban heat planning" --rounds 2
 ## 如果你只记一条命令
 
 ```bash
-npm run cli -- ideas --query "your topic here"
+node src/cli.js ideas --query "your topic here"
 ```

@@ -9,6 +9,13 @@ Use this skill when the task is to generate, refine, or compare research ideas a
 
 ## Default policy
 
+If the machine has the packaged CLI installed, prefer calling:
+
+- `research-idea-explorer`
+- or `rie`
+
+Use the repo-local fallback `node src/cli.js` only when the packaged command is unavailable but the repository is present in the workspace.
+
 Default to `literature-first` for every non-pure-functional invocation.
 
 That means:
@@ -32,6 +39,21 @@ The workflow is:
 5. Push each retained idea one step further by adding:
    data source, minimal runnable design, likely failure mode, and why the question matters now.
 6. When available, use the persistent memory graph so the session does not keep revisiting the same research neighborhoods.
+
+## CLI mapping
+
+When you want the backend to do the work instead of manually re-creating the flow:
+
+- generate ideas:
+  `research-idea-explorer ideas --query "..."`
+- inspect memory:
+  `research-idea-explorer graph --memory ./data/memory/cli-memory.json`
+- list ideas for feedback:
+  `research-idea-explorer feedback --memory ./data/memory/cli-memory.json`
+- accept or reject an idea:
+  `research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted`
+
+If only the repo-local version is available, the same commands can be run with `node src/cli.js`.
 
 ## Guardrails
 

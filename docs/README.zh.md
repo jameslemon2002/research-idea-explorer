@@ -83,9 +83,17 @@ memory graph 支持这些检查视图：
 
 ## 一条最短命令
 
+本地 CLI 只需要 `Node.js 18+`，不需要 `npm install`，也不支持 `pip install`。
+
 ```bash
-npm install
-npm run cli -- ideas --query "urban heat planning"
+node src/cli.js ideas --query "urban heat planning"
+```
+
+如果你想让别的用户也能装成机器级命令，可以在仓库根目录执行：
+
+```bash
+npm install -g .
+research-idea-explorer install codex-skill
 ```
 
 ## Codex / Skill 示例

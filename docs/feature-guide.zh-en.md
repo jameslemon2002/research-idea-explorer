@@ -87,23 +87,23 @@
 CLI 例子：
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
 ```
 
 ```bash
-npm run cli -- ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
+node src/cli.js ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
 ```
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib
+node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib
 ```
 
 ```bash
-npm run cli -- ideas --query "corporate finance productivity" --providers nber
+node src/cli.js ideas --query "corporate finance productivity" --providers nber
 ```
 
 ```bash
-npm run cli -- ideas --query "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=123456" --providers ssrn
+node src/cli.js ideas --query "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=123456" --providers ssrn
 ```
 
 #### 1.1 `Mode Switch` 检索模式切换
@@ -125,19 +125,19 @@ npm run cli -- ideas --query "https://papers.ssrn.com/sol3/papers.cfm?abstract_i
 CLI 例子：
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy lexical
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy lexical
 ```
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy embedding
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy embedding
 ```
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy graph
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy graph
 ```
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy hybrid
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy hybrid
 ```
 
 触发规则：
@@ -235,11 +235,11 @@ CLI 图视图：
 CLI 例子：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
 ```
 
 #### 6. `Feedback Loop` 反馈回路
@@ -255,11 +255,11 @@ npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --i
 CLI 例子：
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json
+node src/cli.js feedback --memory ./data/memory/cli-memory.json
 ```
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
+node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
 ### 用户怎么说，系统会触发什么
@@ -301,48 +301,51 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 
 ### 在 CLI 里怎么跑
 
+CLI 是 `Node.js` 脚本。
+在仓库根目录直接执行 `node src/cli.js ...` 即可，不需要 `npm install`，也不是 `pip install` 包。
+
 #### 公共文献源
 
 ```bash
-npm run cli -- ideas --query "urban heat planning"
+node src/cli.js ideas --query "urban heat planning"
 ```
 
 #### 明确指定 provider
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
 ```
 
 ```bash
-npm run cli -- ideas --query "corporate finance productivity" --providers nber
+node src/cli.js ideas --query "corporate finance productivity" --providers nber
 ```
 
 #### 明确指定检索模式
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref --search-strategy embedding
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref --search-strategy embedding
 ```
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref --search-strategy graph
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref --search-strategy graph
 ```
 
 #### 生医方向
 
 ```bash
-npm run cli -- ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
+node src/cli.js ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
 ```
 
 #### 本地文献库
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib --format json
+node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib --format json
 ```
 
 #### 反馈
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted
+node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted
 ```
 
 ### 推荐使用方式
@@ -455,19 +458,19 @@ How users can ask:
 CLI examples:
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy lexical
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy lexical
 ```
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy embedding
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy embedding
 ```
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy graph
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy graph
 ```
 
 ```bash
-npm run cli -- ideas --query "climate adaptation equity" --search-strategy hybrid
+node src/cli.js ideas --query "climate adaptation equity" --search-strategy hybrid
 ```
 
 Trigger rules:
@@ -548,11 +551,11 @@ CLI graph views:
 CLI examples:
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
 ```
 
 #### 6. `Feedback Loop`
@@ -604,34 +607,37 @@ and extend into a new research neighborhood.
 
 ### How To Run It in the CLI
 
+The CLI is a `Node.js` script.
+From the repo root, run `node src/cli.js ...` directly. No `npm install` is required for this workflow, and this project is not a `pip install` package.
+
 #### Public literature sources
 
 ```bash
-npm run cli -- ideas --query "urban heat planning"
+node src/cli.js ideas --query "urban heat planning"
 ```
 
 #### Explicit provider selection
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
 ```
 
 #### Biomedical query
 
 ```bash
-npm run cli -- ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
+node src/cli.js ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
 ```
 
 #### Local library
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib --format json
+node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib --format json
 ```
 
 #### Feedback
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted
+node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted
 ```
 
 ### Best Current Surface

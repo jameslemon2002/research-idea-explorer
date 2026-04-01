@@ -69,37 +69,73 @@
 
 ### 1. 本地 CLI
 
-```bash
-npm install
-npm run cli -- ideas --query "urban heat planning"
-```
-
-### 2. Codex
-
-把 skill 目录复制到 `~/.codex/skills/`，然后重启 Codex：
+这是一个 `Node.js` CLI，不是 Python 包。
+在仓库根目录直接运行时，不需要 `npm install`，也不支持 `pip install`。
+只要本机有 `Node.js 18+`，就可以直接运行：
 
 ```bash
-cp -R skills/research-idea-explorer ~/.codex/skills/
+node src/cli.js ideas --query "urban heat planning"
 ```
 
-之后可以直接调用：
+### 2. 给别的用户安装成全局命令
+
+如果你想让别的用户也能像装本机 skill 一样接入，推荐先把这个项目装成全局命令。
+仓库发布到 npm 后可以直接全局安装；在发布前，也可以从仓库路径或 git URL 安装。
+
+从本地仓库安装：
+
+```bash
+npm install -g .
+```
+
+安装完成后，会得到两个命令名：
+- `research-idea-explorer`
+- `rie`
+
+### 3. Codex
+
+装成全局命令后，直接安装 Codex skill：
+
+```bash
+research-idea-explorer install codex-skill
+```
+
+然后重启 Codex，之后可以直接调用：
 
 ```text
 用 $research-idea-explorer 围绕 “urban heat adaptation” 生成一轮研究方向。
 ```
 
-### 3. Claude Code
-
-把命令文件放进目标项目的 `.claude/commands/`：
+如果你还在仓库里本地调试，也可以直接运行：
 
 ```bash
-cp .claude/commands/research-idea-explorer.md /path/to/your-project/.claude/commands/
+node src/cli.js install codex-skill
 ```
 
-之后在 Claude Code 中调用：
+### 4. Claude Code
+
+装成全局命令后，把命令文件安装到目标项目：
+
+```bash
+research-idea-explorer install claude-command --project /path/to/your-project
+```
+
+之后在该项目的 Claude Code 中调用：
 
 ```text
 /research-idea-explorer
+```
+
+如果想一次把 Codex 和 Claude 两个入口都装好：
+
+```bash
+research-idea-explorer install all --project /path/to/your-project
+```
+
+如果你还在仓库里本地调试，也可以直接运行：
+
+```bash
+node src/cli.js install claude-command --project /path/to/your-project
 ```
 
 ## 快速开始
@@ -107,49 +143,49 @@ cp .claude/commands/research-idea-explorer.md /path/to/your-project/.claude/comm
 运行 demo：
 
 ```bash
-npm run demo
+node src/demo.js
 ```
 
 直接生成一轮 ideas：
 
 ```bash
-npm run cli -- ideas --query "urban heat planning"
+node src/cli.js ideas --query "urban heat planning"
 ```
 
 显式打开双轮深挖：
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --rounds 2
+node src/cli.js ideas --query "urban heat planning" --rounds 2
 ```
 
 指定公开文献源：
 
 ```bash
-npm run cli -- ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
 ```
 
 强调语义检索：
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --search-strategy embedding
+node src/cli.js ideas --query "urban heat planning" --search-strategy embedding
 ```
 
 强调文献邻域扩展：
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --search-strategy graph
+node src/cli.js ideas --query "urban heat planning" --search-strategy graph
 ```
 
 使用本地文献库：
 
 ```bash
-npm run cli -- ideas --query "urban heat planning" --providers local --local-library-path ./data/library.json
+node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.json
 ```
 
 写回用户反馈：
 
 ```bash
-npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
+node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
 下一次再跑 `ideas` 时，如果 memory 里已经有 `accepted` 方向，系统会自动升级为两轮深挖；如果你只想保持单轮，可以显式传 `--rounds 1`。
@@ -166,7 +202,7 @@ npm run cli -- feedback --memory ./data/memory/cli-memory.json --idea-id <idea-i
 如果你就是想让不同题目共享同一份 history，可以显式传：
 
 ```bash
-npm run cli -- ideas --query "your topic here" --memory-scope global
+node src/cli.js ideas --query "your topic here" --memory-scope global
 ```
 
 更完整的上手流程见：
@@ -178,19 +214,19 @@ npm run cli -- ideas --query "your topic here" --memory-scope global
 查看 memory graph 概览：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json
+node src/cli.js graph --memory ./data/memory/cli-memory.json
 ```
 
 列出最近 ideas：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view ideas
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
 查看某个 idea 的邻域：
 
 ```bash
-npm run cli -- graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+node src/cli.js graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
 ```
 
 ## 支持的文献源

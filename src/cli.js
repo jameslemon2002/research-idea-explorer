@@ -1,6 +1,9 @@
+#!/usr/bin/env node
+
 import fs from "node:fs/promises";
 
 import { runIdeaPipeline } from "./engine/pipeline.js";
+import { installAgentSurfaces, installClaudeCommand, installCodexSkill } from "./install.js";
 import { collectIdeaNodes, createMemoryGraph, recordIdeaDecision } from "./memory/graph.js";
 import { loadMemoryGraph, saveMemoryGraph } from "./memory/store.js";
 import {
@@ -97,6 +100,14 @@ function asArray(value) {
     return [];
   }
   return Array.isArray(value) ? value : [value];
+}
+
+function resolveProjectPath(flags) {
+  return flags.project || flags.cwd || process.cwd();
+}
+
+function formatInstallSummary(lines) {
+  return `${lines.join("\n")}\n`;
 }
 
 async function runIdeasCommand(flags) {
@@ -220,6 +231,60 @@ async function runGraphCommand(flags) {
   process.stdout.write(`${output}\n`);
 }
 
+async function runInstallCommand(flags) {
+  const target = flags._[0];
+  const homeDir = flags.home;
+  const projectDir = resolveProjectPath(flags);
+
+  if (target === "codex-skill") {
+    const result = await installCodexSkill({ homeDir });
+    process.stdout.write(
+      formatInstallSummary([
+        "Installed Codex skill.",
+        `- Target: ${result.targetDir}`,
+        "",
+        "Next step:",
+        "- Restart Codex, then call `$research-idea-explorer` in a prompt."
+      ])
+    );
+    return;
+  }
+
+  if (target === "claude-command") {
+    const result = await installClaudeCommand({ projectDir });
+    process.stdout.write(
+      formatInstallSummary([
+        "Installed Claude Code command.",
+        `- Target: ${result.targetFile}`,
+        "",
+        "Next step:",
+        "- In that project, run `/research-idea-explorer`."
+      ])
+    );
+    return;
+  }
+
+  if (target === "all") {
+    const result = await installAgentSurfaces({ homeDir, projectDir });
+    process.stdout.write(
+      formatInstallSummary([
+        "Installed agent surfaces.",
+        `- Codex skill: ${result.codex.targetDir}`,
+        `- Claude command: ${result.claude.targetFile}`,
+        "",
+        "Next steps:",
+        "- Restart Codex, then call `$research-idea-explorer`.",
+        "- In the target Claude Code project, run `/research-idea-explorer`."
+      ])
+    );
+    return;
+  }
+
+  throw new Error(
+    "Unknown install target. Supported targets: codex-skill, claude-command, all."
+  );
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const hasExplicitCommand = Boolean(args[0] && !args[0].startsWith("--"));
@@ -238,6 +303,11 @@ async function main() {
 
   if (command === "graph") {
     await runGraphCommand(flags);
+    return;
+  }
+
+  if (command === "install") {
+    await runInstallCommand(flags);
     return;
   }
 
