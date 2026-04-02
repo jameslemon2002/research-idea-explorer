@@ -5,7 +5,7 @@
 
 ## Positioning
 
-`Research Idea Explorer` is a research-ideation backend for `Codex CLI` and `Claude Code`.
+`Research Idea Explorer` is positioned more like a research-ideation skill / command: a skill in `Codex CLI` and a command surface in `Claude Code`.
 
 It handles:
 
@@ -15,7 +15,7 @@ It handles:
 - structured research-card generation
 - accept / reject feedback in a persistent memory graph
 
-Most users will interact with it through `Codex` or `Claude Code`, not by manually assembling the pipeline.
+Most users will interact with it through `Codex` or `Claude Code`; the installable command exists to support those entry points.
 
 ## Good fit for
 

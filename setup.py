@@ -6,7 +6,7 @@ from setuptools import find_packages, setup
 setup(
     name="research-idea-explorer",
     version="0.2.0",
-    description="Research ideation backend for Codex CLI and Claude Code",
+    description="Research ideation companion for Codex CLI and Claude Code",
     long_description=Path("README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",
     author="James Lemon",

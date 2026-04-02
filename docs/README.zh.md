@@ -5,7 +5,7 @@
 
 ## 项目定位
 
-`Research Idea Explorer` 是一个研究想题 backend，主要给 `Codex CLI` 和 `Claude Code` 使用。
+`Research Idea Explorer` 的用户侧定位更接近一个研究想题 skill / command：在 `Codex CLI` 里是 skill，在 `Claude Code` 里是 command。
 
 它负责：
 
@@ -15,7 +15,7 @@
 - 收束成结构化 research cards
 - 记录 accept / reject 到 memory graph
 
-它不要求用户直接理解内部 pipeline。用户通常只会在 `Codex` 或 `Claude Code` 里提出需求，backend 在背后执行。
+用户通常只会在 `Codex` 或 `Claude Code` 里提出需求；仓库里的可安装命令只是用来支撑这两个入口。
 
 ## 适合什么场景
 

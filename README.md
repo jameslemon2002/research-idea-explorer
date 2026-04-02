@@ -2,9 +2,9 @@
 
 # Research Idea Explorer
 
-### 给 `Codex CLI` 和 `Claude Code` 用的研究想题后端。
+### 给 `Codex CLI` 和 `Claude Code` 用的研究想题 skill / command。
 
-*A literature-grounded research ideation backend for Codex CLI and Claude Code.*
+*A research ideation skill for Codex CLI and command for Claude Code.*
 
 ![Status](https://img.shields.io/badge/Status-Release%20Ready-0F766E)
 ![Install](https://img.shields.io/badge/Install-pipx%20or%20pip-1F2937)
@@ -27,7 +27,7 @@
 4. 用 memory graph 记住 accept / reject 历史，避免每轮从零开始
 5. 只有在用户要求深挖或沿 accepted 方向继续时，才升级成第二轮 mutation
 
-它的定位不是“替代 Codex CLI / Claude Code”，而是做它们背后的研究想题 backend：
+它的定位不是“替代 Codex CLI / Claude Code”，而是作为一个 `Codex skill` 和 `Claude Code command` 接进去：
 
 `用户 -> Codex CLI / Claude Code -> skill / command -> research-idea-explorer`
 

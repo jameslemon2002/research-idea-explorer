@@ -42,7 +42,7 @@ The workflow is:
 
 ## CLI mapping
 
-When you want the backend to do the work instead of manually re-creating the flow:
+When you want the packaged command to do the work instead of manually re-creating the flow:
 
 - generate ideas:
   `research-idea-explorer ideas --query "..."`
