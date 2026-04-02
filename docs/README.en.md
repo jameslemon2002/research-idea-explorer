@@ -7,13 +7,19 @@
 
 `Research Idea Explorer` is positioned more like a research-ideation skill / command: a skill in `Codex CLI` and a command surface in `Claude Code`.
 
-It handles:
+It is designed for a familiar frustration with AI-generated ideas:
 
-- literature retrieval
-- literature-map construction
-- divergence across multiple research moves
-- structured research-card generation
-- accept / reject feedback in a persistent memory graph
+- you get many directions, but few are actually usable
+- they sound novel until you check the literature
+- each round forgets what you already accepted or rejected
+
+Its advantages are straightforward:
+
+- literature-first grounding before idea generation
+- divergence across multiple research moves, then structured research cards
+- persistent memory for accept / reject history and stated user preferences
+- topic-scoped continuation so nearby topics can build on each other without global contamination
+- a second mutation round only when the user asks for depth or continues from a promising direction
 
 Most users will interact with it through `Codex` or `Claude Code`; the installable command exists to support those entry points.
 
@@ -22,7 +28,7 @@ Most users will interact with it through `Codex` or `Claude Code`; the installab
 - generating grounded research directions from a topic
 - avoiding shallow “method + topic” combinations
 - continuing from an existing Zotero or local paper library
-- preserving accept / reject history between rounds
+- preserving accept / reject history and user preferences between rounds
 
 ## Workflow
 
@@ -30,7 +36,7 @@ Most users will interact with it through `Codex` or `Claude Code`; the installab
 2. build a literature map and adjacent neighborhoods
 3. diverge from multiple research moves, then focus to a frontier
 4. filter with overlap, duplication, and memory signals
-5. continue through accept / reject feedback
+5. continue through accept / reject feedback and stored preferences
 6. only run a second mutation round when the user asks for depth or continues from an accepted direction
 
 Default principle:
@@ -51,6 +57,7 @@ Memory graph views:
 - `summary`
 - `ideas`
 - `neighbors`
+- `preferences`
 
 ## Supported sources
 
@@ -94,6 +101,7 @@ Requirements:
 research-idea-explorer ideas --query "urban heat planning"
 research-idea-explorer graph --memory ./data/memory/cli-memory.json
 research-idea-explorer feedback --memory ./data/memory/cli-memory.json
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences
 ```
 
 ## Start here

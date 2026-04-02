@@ -17,27 +17,49 @@ from .memory import (
     record_pipeline_run,
 )
 from .retrieval import build_literature_index, get_graph_neighbors, search_literature, trace_literature_queries
-from .schema import build_topic_profile, create_brainstorm_seed, create_idea_card, create_research_state, idea_to_match_text, tokenize, unique
+from .schema import build_topic_profile, create_brainstorm_seed, create_idea_card, create_research_state, idea_to_match_text, normalize_text, tokenize, unique
 from .similarity import idea_similarity
 
-
-def build_query_seed(query: str, literature_result: dict[str, Any], domain: str | None = None) -> dict[str, Any]:
+def build_query_seed(query: str, literature_result: dict[str, Any], domain: str | None = None, preferences: dict[str, Any] | None = None) -> dict[str, Any]:
+    preferences = preferences or {}
+    query_keywords = [token for token in re.split(r"\s+", query) if token]
+    preferred_keywords = unique([*query_keywords, *preferences.get("keywords", [])])
+    avoid_keywords = unique(preferences.get("avoidKeywords", []))
+    filtered_keywords = [token for token in preferred_keywords if token not in avoid_keywords]
+    default_constraints = {
+        "preferredPuzzles": ["conflict", "distortion", "mechanism_unknown", "boundary_unknown"],
+        "preferredClaims": ["measure", "explain", "identify", "design"],
+        "evidenceKinds": ["survey", "administrative_data", "text_corpus", "simulation"],
+        "personaIds": [
+            "anomaly_hunter",
+            "assumption_breaker",
+            "measurement_skeptic",
+            "failure_miner",
+            "boundary_mapper",
+            "analogy_transfer",
+        ],
+        "keywords": filtered_keywords,
+        "avoidPuzzles": preferences.get("avoidPuzzles", []),
+        "avoidClaims": preferences.get("avoidClaims", []),
+        "avoidEvidenceKinds": preferences.get("avoidEvidenceKinds", []),
+        "avoidKeywords": avoid_keywords,
+        "avoidPersonaIds": preferences.get("avoidPersonaIds", []),
+    }
+    constraints = {
+        "preferredPuzzles": preferences.get("preferredPuzzles") or default_constraints["preferredPuzzles"],
+        "preferredClaims": preferences.get("preferredClaims") or default_constraints["preferredClaims"],
+        "evidenceKinds": preferences.get("evidenceKinds") or default_constraints["evidenceKinds"],
+        "personaIds": preferences.get("personaIds") or default_constraints["personaIds"],
+        "keywords": default_constraints["keywords"],
+        "avoidPuzzles": default_constraints["avoidPuzzles"],
+        "avoidClaims": default_constraints["avoidClaims"],
+        "avoidEvidenceKinds": default_constraints["avoidEvidenceKinds"],
+        "avoidKeywords": default_constraints["avoidKeywords"],
+        "avoidPersonaIds": default_constraints["avoidPersonaIds"],
+    }
     return {
         "focus": {"domain": domain or "live-search", "objects": [query]},
-        "constraints": {
-            "preferredPuzzles": ["conflict", "distortion", "mechanism_unknown", "boundary_unknown"],
-            "preferredClaims": ["measure", "explain", "identify", "design"],
-            "evidenceKinds": ["survey", "administrative_data", "text_corpus", "simulation"],
-            "personaIds": [
-                "anomaly_hunter",
-                "assumption_breaker",
-                "measurement_skeptic",
-                "failure_miner",
-                "boundary_mapper",
-                "analogy_transfer",
-            ],
-            "keywords": [token for token in re.split(r"\s+", query) if token],
-        },
+        "constraints": constraints,
         "contrasts": [
             {"axis": "population", "comparison": "core subgroups with unequal exposure"},
             {"axis": "institution", "comparison": "settings with and without formal intervention"},
@@ -49,8 +71,9 @@ def build_query_seed(query: str, literature_result: dict[str, Any], domain: str 
             "time": "recent literature window",
             "scale": "mixed",
         },
-        "stakes": ["novelty", "feasibility", "literature awareness"],
+        "stakes": unique(["novelty", "feasibility", "literature awareness", *preferences.get("stakes", [])]),
         "history": [],
+        "activePreferences": preferences,
         "literature": {"providers": literature_result.get("providers", []), "paperCount": len(literature_result.get("papers", []))},
     }
 
@@ -118,10 +141,23 @@ def _pick_contrasts(state: dict[str, Any], feedback_strategy: dict[str, Any]) ->
 
 def _filter_evidence_bias(persona: dict[str, Any], state: dict[str, Any]) -> list[str]:
     preferred = state.get("constraints", {}).get("evidenceKinds", [])
+    avoided = set(state.get("constraints", {}).get("avoidEvidenceKinds", []))
+    allowed_bias = [kind for kind in persona["evidenceBias"] if kind not in avoided]
     if not preferred:
-        return persona["evidenceBias"]
-    overlap = [kind for kind in persona["evidenceBias"] if kind in preferred]
-    return overlap or preferred[:3]
+        return allowed_bias or persona["evidenceBias"]
+    overlap = [kind for kind in allowed_bias if kind in preferred]
+    fallback = [kind for kind in preferred if kind not in avoided]
+    return overlap or fallback[:3] or allowed_bias or persona["evidenceBias"]
+
+
+def _resolve_seed_personas(state: dict[str, Any]) -> list[dict[str, Any]]:
+    preferred = state.get("constraints", {}).get("personaIds", [])
+    avoided = set(state.get("constraints", {}).get("avoidPersonaIds", []))
+    personas = [persona for persona in resolve_personas(preferred) if persona["id"] not in avoided]
+    if personas:
+        return personas
+    fallback = [persona for persona in resolve_personas() if persona["id"] not in avoided]
+    return fallback or resolve_personas()
 
 
 def _select_anchor_paper(obj: str, state: dict[str, Any], papers: dict[str, Any]) -> dict[str, Any] | None:
@@ -257,7 +293,7 @@ def build_literature_map(state: dict[str, Any], index_input: dict[str, Any], str
 
 
 def brainstorm_seeds(state: dict[str, Any], papers: dict[str, Any], feedback_strategy: dict[str, Any], literature_map: dict[str, Any], limit: int = 36) -> list[dict[str, Any]]:
-    personas = resolve_personas(state.get("constraints", {}).get("personaIds"))
+    personas = _resolve_seed_personas(state)
     contrasts = _pick_contrasts(state, feedback_strategy)
     neighborhoods = literature_map.get("neighborhoods", [])
     literature_contexts = neighborhoods or [
@@ -309,16 +345,19 @@ def crystallize_seeds(brainstorm_seeds_list: list[dict[str, Any]], state: dict[s
     preferred_claims = state.get("constraints", {}).get("preferredClaims", [])
     preferred_puzzles = state.get("constraints", {}).get("preferredPuzzles", [])
     preferred_evidence = state.get("constraints", {}).get("evidenceKinds", [])
+    avoided_claims = set(state.get("constraints", {}).get("avoidClaims", []))
+    avoided_puzzles = set(state.get("constraints", {}).get("avoidPuzzles", []))
+    avoided_evidence = set(state.get("constraints", {}).get("avoidEvidenceKinds", []))
     for seed in brainstorm_seeds_list:
-        puzzle_ids = [puzzle_id for puzzle_id in seed.get("suggestedPuzzles", []) if not preferred_puzzles or puzzle_id in preferred_puzzles] or seed.get("suggestedPuzzles", [])
-        claim_ids = [claim_id for claim_id in seed.get("suggestedClaims", []) if not preferred_claims or claim_id in preferred_claims] or seed.get("suggestedClaims", [])
+        puzzle_ids = [puzzle_id for puzzle_id in seed.get("suggestedPuzzles", []) if puzzle_id not in avoided_puzzles and (not preferred_puzzles or puzzle_id in preferred_puzzles)] or [puzzle_id for puzzle_id in seed.get("suggestedPuzzles", []) if puzzle_id not in avoided_puzzles] or seed.get("suggestedPuzzles", [])
+        claim_ids = [claim_id for claim_id in seed.get("suggestedClaims", []) if claim_id not in avoided_claims and (not preferred_claims or claim_id in preferred_claims)] or [claim_id for claim_id in seed.get("suggestedClaims", []) if claim_id not in avoided_claims] or seed.get("suggestedClaims", [])
         puzzles = [puzzle for puzzle_id in puzzle_ids[:2] if (puzzle := get_puzzle(puzzle_id))]
         claims = [claim for claim_id in claim_ids[:2] if (claim := get_claim(claim_id))]
         contrasts = (seed.get("contrastSuggestions") or state.get("contrasts") or [])[:2]
         for puzzle in puzzles:
             for claim in claims:
-                overlap = [kind for kind in claim["defaultEvidence"] if kind in seed.get("evidenceHints", []) and (not preferred_evidence or kind in preferred_evidence)]
-                selected_evidence = overlap or [kind for kind in claim["defaultEvidence"] if not preferred_evidence or kind in preferred_evidence] or claim["defaultEvidence"]
+                overlap = [kind for kind in claim["defaultEvidence"] if kind not in avoided_evidence and kind in seed.get("evidenceHints", []) and (not preferred_evidence or kind in preferred_evidence)]
+                selected_evidence = overlap or [kind for kind in claim["defaultEvidence"] if kind not in avoided_evidence and (not preferred_evidence or kind in preferred_evidence)] or [kind for kind in claim["defaultEvidence"] if kind not in avoided_evidence] or claim["defaultEvidence"]
                 for contrast in contrasts:
                     for evidence_kind in selected_evidence[:2]:
                         evidence = {"kind": evidence_kind, "detail": EVIDENCE_LIBRARY[evidence_kind]}
@@ -479,14 +518,39 @@ def score_idea(idea: dict[str, Any], state: dict[str, Any], papers: dict[str, An
     rejected_alignment = max((idea_similarity(candidate, idea) for candidate in rejected_ideas), default=0)
     literature_trace = idea.get("literatureTrace") or probe_idea_literature(idea, papers, state)
     keyword_tokens = set(tokenize(" ".join(state.get("constraints", {}).get("keywords", []))))
+    active_preferences = state.get("activePreferences", {}) or {}
+    preference_keyword_tokens = set(tokenize(" ".join(active_preferences.get("keywords", []))))
+    avoid_keyword_tokens = set(tokenize(" ".join(active_preferences.get("avoidKeywords", []))))
     idea_tokens = set(tokenize(idea_to_match_text(idea)))
     keyword_hits = len([token for token in keyword_tokens if token in idea_tokens])
+    avoid_keyword_hits = len([token for token in avoid_keyword_tokens if token in idea_tokens])
     novelty = round(1 - literature_trace["crowdedness"], 3)
     diversity = round(1 - max_visited_similarity, 3)
     feasibility_base = EVIDENCE_FEASIBILITY.get(idea["evidence"]["kind"], 0.65)
     scope_bonus = _average([1 if value and not str(value).startswith("unspecified") else 0 for value in [idea["scope"]["population"], idea["scope"]["place"], idea["scope"]["time"], idea["scope"]["scale"]]])
     feasibility = round((0.85 * feasibility_base + 0.15 * scope_bonus) if feedback_strategy.get("avoidOverNarrowing") else (0.7 * feasibility_base + 0.3 * scope_bonus), 3)
-    user_fit = round(0.75 if not keyword_tokens else min(1.0, keyword_hits / max(len(keyword_tokens), 1)), 3)
+    keyword_fit = round(0.75 if not keyword_tokens else min(1.0, keyword_hits / max(len(keyword_tokens), 1)), 3)
+    preferred_checks = []
+    preferred_claims = set(active_preferences.get("preferredClaims", []))
+    preferred_puzzles = set(active_preferences.get("preferredPuzzles", []))
+    preferred_evidence = set(active_preferences.get("evidenceKinds", []))
+    preferred_personas = set(active_preferences.get("personaIds", []))
+    preferred_stakes = set(normalize_text(item) for item in active_preferences.get("stakes", []))
+    if preference_keyword_tokens:
+        keyword_pref_hits = len([token for token in preference_keyword_tokens if token in idea_tokens])
+        preferred_checks.append(min(1.0, keyword_pref_hits / max(len(preference_keyword_tokens), 1)))
+    if preferred_claims:
+        preferred_checks.append(1 if idea["claim"]["id"] in preferred_claims else 0)
+    if preferred_puzzles:
+        preferred_checks.append(1 if idea["puzzle"]["id"] in preferred_puzzles else 0)
+    if preferred_evidence:
+        preferred_checks.append(1 if idea["evidence"]["kind"] in preferred_evidence else 0)
+    if preferred_personas:
+        preferred_checks.append(1 if idea.get("origin", {}).get("personaId") in preferred_personas else 0)
+    if preferred_stakes:
+        stake_overlap = len(preferred_stakes & set(normalize_text(stake) for stake in idea.get("stakes", [])))
+        preferred_checks.append(min(1.0, stake_overlap / max(len(preferred_stakes), 1)))
+    user_fit = round(((0.6 * keyword_fit + 0.4 * _average(preferred_checks)) if preferred_checks else keyword_fit), 3)
     creativity = round(
         min(
             1.0,
@@ -501,6 +565,18 @@ def score_idea(idea: dict[str, Any], state: dict[str, Any], papers: dict[str, An
     )
     grounding = literature_trace["grounding"]
     critique_penalty = idea.get("critique", {}).get("penalty", 0)
+    avoid_checks = []
+    if active_preferences.get("avoidClaims"):
+        avoid_checks.append(1 if idea["claim"]["id"] in set(active_preferences.get("avoidClaims", [])) else 0)
+    if active_preferences.get("avoidPuzzles"):
+        avoid_checks.append(1 if idea["puzzle"]["id"] in set(active_preferences.get("avoidPuzzles", [])) else 0)
+    if active_preferences.get("avoidEvidenceKinds"):
+        avoid_checks.append(1 if idea["evidence"]["kind"] in set(active_preferences.get("avoidEvidenceKinds", [])) else 0)
+    if active_preferences.get("avoidPersonaIds"):
+        avoid_checks.append(1 if idea.get("origin", {}).get("personaId") in set(active_preferences.get("avoidPersonaIds", [])) else 0)
+    if avoid_keyword_tokens:
+        avoid_checks.append(min(1.0, avoid_keyword_hits / max(len(avoid_keyword_tokens), 1)))
+    preference_penalty = round(0.18 * _average(avoid_checks), 3) if avoid_checks else 0
     lateral_escape = round(((1 - rejected_alignment) * (1 if idea.get("familyId") not in prior_families else 0.7)) if feedback_strategy.get("expandLaterally") else 0, 3)
     rejected_lane_penalty = round(((0.12 if idea.get("familyId") in rejected_families else 0) + (0.12 if idea.get("contrast", {}).get("comparison") in rejected_comparisons else 0) + (0.06 if idea.get("evidence", {}).get("kind") in rejected_evidence else 0)) if feedback_strategy.get("expandLaterally") else 0, 3)
     novelty_weight, diversity_weight = (0.24, 0.24) if feedback_strategy.get("expandLaterally") else (0.22, 0.18)
@@ -522,6 +598,7 @@ def score_idea(idea: dict[str, Any], state: dict[str, Any], papers: dict[str, An
         + lateral_escape_weight * lateral_escape
         - rejected_alignment_weight * rejected_alignment
         - rejected_lane_penalty
+        - preference_penalty
         - critique_penalty,
         3,
     )
@@ -532,6 +609,7 @@ def score_idea(idea: dict[str, Any], state: dict[str, Any], papers: dict[str, An
         "userFit": user_fit,
         "creativity": creativity,
         "grounding": grounding,
+        "preferencePenalty": preference_penalty,
         "acceptedAlignment": round(accepted_alignment, 3),
         "rejectedAlignment": round(rejected_alignment, 3),
         "lateralEscape": lateral_escape,
@@ -615,6 +693,7 @@ def build_mutation_round(frontier: list[dict[str, Any]], state: dict[str, Any], 
     paper_list = papers.get("papers") if isinstance(papers, dict) else papers
     paper_map = {paper["id"]: paper for paper in paper_list}
     rejected_evidence_kinds = set(feedback_strategy.get("rejectedEvidenceKinds", []))
+    avoided_evidence_kinds = set(state.get("constraints", {}).get("avoidEvidenceKinds", []))
     target_ideas = sorted(frontier, key=lambda item: (item.get("scores", {}).get("rejectedAlignment", 0), -(item.get("scores", {}).get("diversity", 0))))[:idea_limit]
     seeds = []
     traces = []
@@ -658,7 +737,9 @@ def build_mutation_round(frontier: list[dict[str, Any]], state: dict[str, Any], 
                 ],
             ]
         )[:4]
-        ordered_evidence_hints = unique([*[kind for kind in evidence_hints if kind not in rejected_evidence_kinds], *[kind for kind in evidence_hints if kind in rejected_evidence_kinds]])[:4] if feedback_strategy.get("expandLaterally") else evidence_hints
+        preferred_hints = [kind for kind in evidence_hints if kind not in avoided_evidence_kinds and kind not in rejected_evidence_kinds]
+        fallback_hints = [kind for kind in evidence_hints if kind not in avoided_evidence_kinds]
+        ordered_evidence_hints = unique([*preferred_hints, *fallback_hints, *[kind for kind in evidence_hints if kind in rejected_evidence_kinds and kind not in avoided_evidence_kinds]])[:4] if feedback_strategy.get("expandLaterally") else (fallback_hints or evidence_hints)
         alternatives = sorted([contrast for contrast in state.get("contrasts", []) if contrast["comparison"] != idea["contrast"]["comparison"]], key=lambda contrast: 1 if contrast["comparison"] in rejected_comparisons else 0)
         mutation_contrast = alternatives[idea_index % max(len(alternatives), 1)] if alternatives else idea["contrast"]
         anchor_title = trace["mergedHits"][0]["paper"]["title"] if trace["mergedHits"] else idea["title"]
@@ -816,6 +897,7 @@ def run_idea_pipeline(input_data: dict[str, Any], papers: dict[str, Any], query:
     )
     return {
         "state": state,
+        "activePreferences": state.get("activePreferences", {}),
         "feedbackStrategy": feedback_strategy,
         "topicProfile": topic_profile,
         "memoryScope": memory_scope,

@@ -7,13 +7,19 @@
 
 `Research Idea Explorer` 的用户侧定位更接近一个研究想题 skill / command：在 `Codex CLI` 里是 skill，在 `Claude Code` 里是 command。
 
-它负责：
+如果你也被这类 AI idea 体验困扰过，这个项目就是冲着这些问题来的：
 
-- 检索文献
-- 建立 literature map
-- 从多种 research moves 发散
-- 收束成结构化 research cards
-- 记录 accept / reject 到 memory graph
+- 给出的方向很多，但真正值得做的不多
+- 表面上很新，一落到文献里就发现撞题
+- 每轮都像重新开始，accept / reject 经验留不下来
+
+它的优势：
+
+- 文献先行，先看真实邻近工作再生成方向
+- 从多种 research moves 发散，再收束成结构化 research cards
+- 记录 accept / reject 历史，也记录对话里表达过的偏好
+- 默认按 topic 延续探索，减少不同题目互相污染
+- 需要深挖时再做第二轮 mutation，默认不会越跑越散
 
 用户通常只会在 `Codex` 或 `Claude Code` 里提出需求；仓库里的可安装命令只是用来支撑这两个入口。
 
@@ -22,7 +28,7 @@
 - 你有一个主题，想快速得到一轮有文献依据的研究方向
 - 你不想只得到“方法 + 主题”的浅层拼接
 - 你已经有本地文献库，想继续推进
-- 你想保留 accept / reject 历史，避免每轮从零开始
+- 你想保留 accept / reject 历史和偏好，避免每轮从零开始
 
 ## 工作流
 
@@ -30,7 +36,7 @@
 2. 建立一轮 literature map 和邻近文献 neighborhood
 3. 从多种 research moves 发散，再收束成 frontier
 4. 用重复检测、重叠检查和 memory 信号做筛选
-5. 通过 accept / reject 继续下一轮
+5. 通过 accept / reject 和偏好记忆继续下一轮
 6. 只有在要求深挖或沿 accepted 方向继续时，才做第二轮 mutation
 
 默认原则：
@@ -51,6 +57,7 @@ memory graph 支持这些检查视图：
 - `summary`
 - `ideas`
 - `neighbors`
+- `preferences`
 
 ## 支持的文献源
 
@@ -94,6 +101,7 @@ python3 -m pip install --user git+https://github.com/jameslemon2002/research-ide
 research-idea-explorer ideas --query "urban heat planning"
 research-idea-explorer graph --memory ./data/memory/cli-memory.json
 research-idea-explorer feedback --memory ./data/memory/cli-memory.json
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences
 ```
 
 ## 先看这里

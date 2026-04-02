@@ -14,7 +14,7 @@
 
 `Research Idea Explorer` 更像是一个给 `Codex CLI` 和 `Claude Code` 用的研究想题 skill / command。
 
-它不是单次 prompt，而是一条稳定的主线：
+它的默认主线很清楚：
 
 1. 先检索文献
 2. 再建立 literature map
@@ -88,7 +88,7 @@ research-idea-explorer ideas --query "climate adaptation equity" --search-strate
 #### 3. `Research Moves`
 
 作用：
-不是直接拼题目，而是从多种问题结构发散。
+从多种问题结构发散，避免只做浅层题目拼接。
 
 内部会保持几条正交视角：
 
@@ -129,12 +129,13 @@ research-idea-explorer ideas --query "climate adaptation equity" --search-strate
 research-idea-explorer graph --memory ./data/memory/cli-memory.json
 research-idea-explorer graph --memory ./data/memory/cli-memory.json --view ideas
 research-idea-explorer graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences
 ```
 
 #### 6. `Feedback Loop`
 
 作用：
-让 accept / reject 进入 memory graph，影响下一轮。
+让 accept / reject 和用户偏好进入 memory graph，影响下一轮。
 
 例子：
 
@@ -144,6 +145,14 @@ research-idea-explorer feedback --memory ./data/memory/cli-memory.json
 
 ```bash
 research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
+```
+
+```bash
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "更偏 causal identification，不要 survey，要 policy relevance" --remember-preferences topic
+```
+
+```bash
+research-idea-explorer ideas --query "urban heat planning" --preference-note "更偏 causal identification，不要 survey，要 policy relevance" --remember-preferences topic
 ```
 
 如果同一 topic 连续被 reject，且还没有 accepted 方向，系统会自动进入 lateral reset：
@@ -178,7 +187,7 @@ research-idea-explorer install claude-command --project /path/to/your-project
 
 `Research Idea Explorer` is best understood as a research-ideation skill for `Codex CLI` and a command surface for `Claude Code`.
 
-It is not a one-shot prompt. The default path is:
+Its default path is:
 
 1. retrieve literature
 2. build a literature map
@@ -293,12 +302,13 @@ Common views:
 research-idea-explorer graph --memory ./data/memory/cli-memory.json
 research-idea-explorer graph --memory ./data/memory/cli-memory.json --view ideas
 research-idea-explorer graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences
 ```
 
 #### 6. `Feedback Loop`
 
 Purpose:
-write accept / reject decisions back into the memory graph and change later continuation.
+write accept / reject decisions and user preferences back into the memory graph and change later continuation.
 
 Examples:
 
@@ -308,6 +318,14 @@ research-idea-explorer feedback --memory ./data/memory/cli-memory.json
 
 ```bash
 research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
+```
+
+```bash
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "prefer causal identification, avoid survey, keep policy relevance" --remember-preferences topic
+```
+
+```bash
+research-idea-explorer ideas --query "urban heat planning" --preference-note "prefer causal identification, avoid survey, keep policy relevance" --remember-preferences topic
 ```
 
 If repeated rejection still has not produced an accepted direction, the system shifts into a lateral reset:

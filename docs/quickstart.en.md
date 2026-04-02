@@ -61,6 +61,12 @@ To list the most recent ideas:
 research-idea-explorer graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
+To inspect remembered preferences:
+
+```bash
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences
+```
+
 ### 4. Accept a direction and continue
 
 First list the generated ideas:
@@ -75,7 +81,19 @@ Then accept one:
 research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
-Then run `ideas` again to continue from the updated memory graph. If the memory graph already contains an `accepted` idea, the next `ideas` run automatically upgrades to two rounds unless you pass `--rounds 1`.
+If you also want to remember the conversation-level preferences from that round:
+
+```bash
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "prefer causal identification, avoid survey, keep policy relevance" --remember-preferences topic
+```
+
+You can also store preferences directly during generation:
+
+```bash
+research-idea-explorer ideas --query "urban heat planning" --preference-note "prefer causal identification, avoid survey, keep policy relevance" --remember-preferences topic
+```
+
+Then run `ideas` again to continue from the updated memory graph. If the memory graph already contains an `accepted` idea, or a stored topic preference profile, the next `ideas` run continues from those signals automatically unless you pass `--rounds 1`.
 
 By default, memory continuation is topic-scoped:
 

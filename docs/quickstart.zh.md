@@ -61,6 +61,12 @@ research-idea-explorer graph --memory ./data/memory/cli-memory.json
 research-idea-explorer graph --memory ./data/memory/cli-memory.json --view ideas
 ```
 
+如果你想看已经记住的偏好：
+
+```bash
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences
+```
+
 ### 4. 接受一个方向，继续推进
 
 先列出已生成的 ideas：
@@ -75,7 +81,19 @@ research-idea-explorer feedback --memory ./data/memory/cli-memory.json
 research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
-然后再跑一轮 `ideas`。如果 memory 里已经有 `accepted` 方向，下一次 `ideas` 会自动升级成两轮深挖；如果你只想保持单轮，可以显式传 `--rounds 1`。
+如果你想把这轮对话里的偏好一起记住：
+
+```bash
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "更偏 causal identification，不要 survey，要 policy relevance" --remember-preferences topic
+```
+
+你也可以在生成时直接写入偏好：
+
+```bash
+research-idea-explorer ideas --query "urban heat planning" --preference-note "更偏 causal identification，不要 survey，要 policy relevance" --remember-preferences topic
+```
+
+然后再跑一轮 `ideas`。如果 memory 里已经有 `accepted` 方向，或者已经记住同 topic 的偏好，下一次 `ideas` 会自动沿这些信号继续；如果你只想保持单轮，可以显式传 `--rounds 1`。
 
 默认情况下，memory continuation 是按 topic scope 隔离的：
 

@@ -115,3 +115,150 @@ class CliTests(unittest.TestCase):
             )
             payload = json.loads(result.stdout)
             self.assertTrue(payload["frontier"])
+
+    def test_ideas_preferences_are_remembered_and_reused(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="rie-cli-preferences-") as tmp_dir:
+            memory_path = str(Path(tmp_dir) / "memory.json")
+            first_result = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "research_idea_explorer.cli",
+                    "ideas",
+                    "--query",
+                    "urban heat adaptation",
+                    "--providers",
+                    "local",
+                    "--local-library-path",
+                    str(Path.cwd() / "tests" / "fixtures" / "library.json"),
+                    "--memory",
+                    memory_path,
+                    "--format",
+                    "json",
+                    "--preference-note",
+                    "不要 survey，更偏 causal identification，要 policy relevance",
+                    "--remember-preferences",
+                    "topic",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            first_payload = json.loads(first_result.stdout)
+            self.assertIn("identify", first_payload["activePreferences"]["preferredClaims"])
+            self.assertIn("survey", first_payload["activePreferences"]["avoidEvidenceKinds"])
+
+            second_result = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "research_idea_explorer.cli",
+                    "ideas",
+                    "--query",
+                    "urban heat adaptation",
+                    "--providers",
+                    "local",
+                    "--local-library-path",
+                    str(Path.cwd() / "tests" / "fixtures" / "library.json"),
+                    "--memory",
+                    memory_path,
+                    "--format",
+                    "json",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            second_payload = json.loads(second_result.stdout)
+            self.assertIn("identify", second_payload["activePreferences"]["preferredClaims"])
+            self.assertIn("survey", second_payload["activePreferences"]["avoidEvidenceKinds"])
+
+            graph_result = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "research_idea_explorer.cli",
+                    "graph",
+                    "--memory",
+                    memory_path,
+                    "--view",
+                    "preferences",
+                    "--format",
+                    "json",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            graph_payload = json.loads(graph_result.stdout)
+            self.assertEqual(len(graph_payload["preferences"]["topics"]), 1)
+            self.assertIn("policy relevance", graph_payload["preferences"]["topics"][0]["stakes"])
+
+    def test_feedback_can_remember_preferences_from_idea_topic(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="rie-cli-feedback-preferences-") as tmp_dir:
+            memory_path = str(Path(tmp_dir) / "memory.json")
+            ideas_result = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "research_idea_explorer.cli",
+                    "ideas",
+                    "--query",
+                    "urban heat adaptation",
+                    "--providers",
+                    "local",
+                    "--local-library-path",
+                    str(Path.cwd() / "tests" / "fixtures" / "library.json"),
+                    "--memory",
+                    memory_path,
+                    "--format",
+                    "json",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            idea_id = json.loads(ideas_result.stdout)["frontier"][0]["id"]
+
+            subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "research_idea_explorer.cli",
+                    "feedback",
+                    "--memory",
+                    memory_path,
+                    "--idea-id",
+                    idea_id,
+                    "--decision",
+                    "accepted",
+                    "--note",
+                    "不要 survey，更偏 causal identification，要 policy relevance",
+                    "--remember-preferences",
+                    "topic",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+
+            graph_result = subprocess.run(
+                [
+                    "python3",
+                    "-m",
+                    "research_idea_explorer.cli",
+                    "graph",
+                    "--memory",
+                    memory_path,
+                    "--view",
+                    "preferences",
+                    "--format",
+                    "json",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            graph_payload = json.loads(graph_result.stdout)
+            self.assertEqual(len(graph_payload["preferences"]["topics"]), 1)
+            self.assertIn("identify", graph_payload["preferences"]["topics"][0]["preferredClaims"])

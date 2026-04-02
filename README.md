@@ -19,15 +19,29 @@
 
 ## 这是什么
 
-`Research Idea Explorer` 不是一次性 prompt 模板，而是一条更稳定的研究探索工作流：
+你是否也被 AI 给出的 idea 困扰过：
+
+- 一次给很多，但真正能做的很少
+- 看起来新，一查文献就发现早有人做过
+- 每一轮都像重新抽卡，上一轮的判断完全留不下来
+
+`Research Idea Explorer` 是给 `Codex CLI` 和 `Claude Code` 用的研究想题 skill / command。它把“先看文献、再发散、再筛选、再继续推进”做成了一条稳定工作流：
 
 1. 先检索公开文献或读取本地文献库
 2. 先做 literature map，识别文献簇和相邻 neighborhood
 3. 再从多种 research moves 发散，并收束成结构化 research cards
-4. 用 memory graph 记住 accept / reject 历史，避免每轮从零开始
+4. 用 memory graph 记住 accept / reject 历史和用户偏好，避免每轮从零开始
 5. 只有在用户要求深挖或沿 accepted 方向继续时，才升级成第二轮 mutation
 
-它的定位不是“替代 Codex CLI / Claude Code”，而是作为一个 `Codex skill` 和 `Claude Code command` 接进去：
+它的优势很直接：
+
+- 文献先行，先看真实邻近工作再发散
+- 输出是可以判断的 research cards，直接给出标题、摘要、设计和意义
+- 能记住 accept / reject 历史，也能记住对话里提过的偏好
+- 默认按 topic scope 延续，相关主题能继续推进，不相关主题不会互相污染
+- 需要深挖时再做第二轮 mutation，不会默认越跑越散
+
+接入方式很简单：
 
 `用户 -> Codex CLI / Claude Code -> skill / command -> research-idea-explorer`
 
@@ -127,6 +141,18 @@ research-idea-explorer graph --memory ./data/memory/cli-memory.json
 research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
+把对话里的偏好记进下一轮：
+
+```bash
+research-idea-explorer ideas --query "urban heat planning" --preference-note "不要 survey，更偏 causal identification，要 policy relevance" --remember-preferences topic
+```
+
+查看已经记住的偏好：
+
+```bash
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences
+```
+
 默认情况下，同一个 memory 文件里的历史会按 topic scope 隔离。相近题目会延续，不相关题目不会互相污染。如果你明确想共享全局 history，再使用：
 
 ```bash
@@ -141,6 +167,7 @@ research-idea-explorer ideas --query "your topic here" --memory-scope global
   `Title / Abstract / Design / Distinctiveness / Significance`
 - persistent JSON memory graph
 - accept / reject feedback loop
+- 对话偏好记忆与下一轮 continuation
 - Codex skill 与 Claude Code command 安装器
 
 ## 支持的文献源

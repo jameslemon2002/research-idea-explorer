@@ -40,6 +40,24 @@ The workflow is:
    data source, minimal runnable design, likely failure mode, and why the question matters now.
 6. When available, use the persistent memory graph so the session does not keep revisiting the same research neighborhoods.
 
+## Preference handling
+
+When the user expresses stable preferences in conversation, carry them into the CLI call instead of treating them as disposable chat context.
+
+Typical examples:
+
+- preferred direction:
+  `prefer causal identification`, `focus on policy relevance`
+- constraints:
+  `avoid survey`, `don't do LLM`, `less benchmark work`
+
+Default behavior:
+
+- Pass those signals through `--preference-note`.
+- Use `--remember-preferences topic` when the preference is specific to the current topic.
+- Use `--remember-preferences global` only when the user clearly wants the same preference to apply across topics.
+- Reuse the same memory path so stored preferences can affect the next `ideas` run.
+
 ## CLI mapping
 
 When you want the packaged command to do the work instead of manually re-creating the flow:
@@ -52,6 +70,12 @@ When you want the packaged command to do the work instead of manually re-creatin
   `research-idea-explorer feedback --memory ./data/memory/cli-memory.json`
 - accept or reject an idea:
   `research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted`
+- generate ideas while storing the user's conversation preferences:
+  `research-idea-explorer ideas --query "..." --preference-note "prefer causal identification, avoid survey" --remember-preferences topic`
+- store preferences during feedback on a retained idea:
+  `research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "prefer causal identification, avoid survey" --remember-preferences topic`
+- inspect stored preference profiles:
+  `research-idea-explorer graph --memory ./data/memory/cli-memory.json --view preferences`
 
 If only the repo-local version is available, the same commands can be run with `python -m research_idea_explorer.cli`.
 

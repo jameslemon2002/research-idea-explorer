@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .preferences import create_preference_profile, has_preference_signal, merge_preference_profiles, summarize_preference_profile
 from .presentation import build_idea_card_view
 from .schema import build_idea_signature, build_topic_profile, same_topic, unique
 from .similarity import idea_similarity
@@ -29,6 +30,7 @@ def create_memory_graph(input_data: dict[str, Any] | None = None) -> dict[str, A
         "nodes": input_data.get("nodes", {}),
         "edges": input_data.get("edges", []),
         "stats": input_data.get("stats", {"runs": 0}),
+        "preferenceProfiles": _normalize_preference_store(input_data.get("preferenceProfiles")),
     }
 
 
@@ -40,6 +42,26 @@ def _payload_dict(node: dict[str, Any] | None) -> dict[str, Any]:
     if not isinstance(node, dict):
         return {}
     return _as_dict(node.get("payload"))
+
+
+def _normalize_preference_store(value: Any) -> dict[str, Any]:
+    value = value if isinstance(value, dict) else {}
+    topics = value.get("topics", [])
+    return {
+        "global": create_preference_profile(value.get("global")),
+        "topics": [create_preference_profile(item) for item in topics if isinstance(item, dict)],
+    }
+
+
+def _preference_store(graph: dict[str, Any]) -> dict[str, Any]:
+    store = graph.get("preferenceProfiles")
+    if not isinstance(store, dict):
+        store = _normalize_preference_store(None)
+        graph["preferenceProfiles"] = store
+    else:
+        store = _normalize_preference_store(store)
+        graph["preferenceProfiles"] = store
+    return store
 
 
 def _upsert_node(graph: dict[str, Any], node: dict[str, Any]) -> dict[str, Any]:
@@ -195,6 +217,53 @@ def record_idea_decision(graph: dict[str, Any], idea_id: str, decision: str, not
     return node
 
 
+def get_preference_profile(graph: dict[str, Any], scope: str = "topic", topic_profile: dict[str, Any] | None = None, threshold: float | None = None) -> dict[str, Any]:
+    store = _preference_store(graph)
+    profiles = [store.get("global")]
+    if scope != "global" and topic_profile:
+        profiles.extend(
+            [
+                profile
+                for profile in store.get("topics", [])
+                if profile.get("topicProfile") and same_topic(profile["topicProfile"], topic_profile, threshold=threshold or 0.26)
+            ]
+        )
+    return merge_preference_profiles(*profiles)
+
+
+def remember_preference_profile(graph: dict[str, Any], profile: dict[str, Any], scope: str = "topic", topic_profile: dict[str, Any] | None = None, threshold: float | None = None) -> dict[str, Any]:
+    if not has_preference_signal(profile):
+        return get_preference_profile(graph, scope=scope, topic_profile=topic_profile, threshold=threshold)
+    store = _preference_store(graph)
+    stamped = create_preference_profile({**profile, "topicProfile": topic_profile, "updatedAt": _now_iso()})
+    if scope == "global":
+        store["global"] = merge_preference_profiles(store.get("global"), stamped)
+    else:
+        matched_index = next(
+            (
+                index
+                for index, existing in enumerate(store.get("topics", []))
+                if existing.get("topicProfile") and topic_profile and same_topic(existing["topicProfile"], topic_profile, threshold=threshold or 0.26)
+            ),
+            None,
+        )
+        if matched_index is None:
+            store["topics"].append(stamped)
+        else:
+            store["topics"][matched_index] = merge_preference_profiles(store["topics"][matched_index], stamped)
+    graph["preferenceProfiles"] = store
+    graph["updatedAt"] = _now_iso()
+    return get_preference_profile(graph, scope=scope, topic_profile=topic_profile, threshold=threshold)
+
+
+def list_preference_profiles(graph: dict[str, Any]) -> dict[str, Any]:
+    store = _preference_store(graph)
+    return {
+        "global": store.get("global"),
+        "topics": store.get("topics", []),
+    }
+
+
 def record_pipeline_run(graph: dict[str, Any], payload: dict[str, Any], paper_limit: int = 20, idea_limit: int = 20, similarity_threshold: float = 0.76) -> dict[str, Any]:
     query = payload.get("query") or " ".join(payload.get("state", {}).get("focus", {}).get("objects", [])) or payload.get("state", {}).get("focus", {}).get("domain") or "query"
     query_node = add_query_node(
@@ -297,6 +366,7 @@ def summarize_memory_graph(graph: dict[str, Any]) -> dict[str, Any]:
     nodes = list(graph.get("nodes", {}).values())
     ideas = [node for node in nodes if node.get("kind") == "idea"]
     latest_query = next(iter(sorted((node for node in nodes if node.get("kind") == "query"), key=lambda item: item.get("updatedAt", ""), reverse=True)), None)
+    preference_profiles = list_preference_profiles(graph)
     return {
         "version": graph.get("version"),
         "runs": graph.get("stats", {}).get("runs", 0),
@@ -308,6 +378,7 @@ def summarize_memory_graph(graph: dict[str, Any]) -> dict[str, Any]:
         "edgeRelations": _count_by(graph.get("edges", []), lambda edge: edge.get("relation", "unknown")),
         "ideaStatuses": _count_by(ideas, lambda node: node.get("status", "candidate")),
         "feedbackDecisions": _count_by([node for node in ideas if _as_dict(_payload_dict(node).get("feedback")).get("decision")], lambda node: _as_dict(_payload_dict(node).get("feedback"))["decision"]),
+        "preferenceProfiles": {"global": 1 if has_preference_signal(preference_profiles.get("global")) else 0, "topic": len([profile for profile in preference_profiles.get("topics", []) if has_preference_signal(profile)])},
     }
 
 
@@ -358,6 +429,7 @@ def format_graph_summary_markdown(summary: dict[str, Any]) -> str:
             f"- Edge relations: {', '.join(f'{key}={value}' for key, value in summary['edgeRelations'].items()) or 'n/a'}",
             f"- Idea statuses: {', '.join(f'{key}={value}' for key, value in summary['ideaStatuses'].items()) or 'n/a'}",
             f"- Feedback decisions: {', '.join(f'{key}={value}' for key, value in summary['feedbackDecisions'].items()) or 'n/a'}",
+            f"- Preference profiles: global={summary.get('preferenceProfiles', {}).get('global', 0)}, topic={summary.get('preferenceProfiles', {}).get('topic', 0)}",
         ]
     )
 
@@ -395,4 +467,26 @@ def format_graph_neighborhood_markdown(neighborhood: dict[str, Any]) -> str:
         edge = next((item for item in neighborhood["edges"] if item.get("source") == center["id"] and item.get("target") == node["id"]), None) or next((item for item in neighborhood["edges"] if item.get("target") == center["id"] and item.get("source") == node["id"]), None)
         lines.append(f"- {node['id']}: {_as_dict(_payload_dict(node).get('cardView')).get('title') or node.get('label')}")
         lines.append(f"  kind={node['kind']}; relation={edge.get('relation') if edge else 'n/a'}; weight={edge.get('weight', 1) if edge else 1}")
+    return "\n".join(lines)
+
+
+def format_preference_profiles_markdown(profiles: dict[str, Any]) -> str:
+    lines = ["# Preference Profiles", ""]
+    global_profile = profiles.get("global") or {}
+    lines.append("## Global")
+    lines.append("")
+    global_lines = summarize_preference_profile(global_profile)
+    lines.extend([*(f"- {line}" for line in global_lines)] or ["- No stored global preferences."])
+    lines.append("")
+    lines.append("## Topics")
+    lines.append("")
+    topic_profiles = profiles.get("topics", []) or []
+    if not topic_profiles:
+        lines.append("- No topic-scoped preference profiles.")
+        return "\n".join(lines)
+    for profile in topic_profiles:
+        topic_label = profile.get("topicProfile", {}).get("text") or profile.get("topicProfile", {}).get("id") or "topic"
+        lines.append(f"- Topic: {topic_label}")
+        for line in summarize_preference_profile(profile):
+            lines.append(f"  {line}")
     return "\n".join(lines)

@@ -16,6 +16,7 @@ from .idea_language import (
     join_readable,
     strip_terminal_punctuation,
 )
+from .preferences import summarize_preference_profile
 
 
 def _compact_sentences(parts: list[str]) -> str:
@@ -149,6 +150,12 @@ def format_ideas_markdown(result: dict[str, Any], memory_path: str) -> str:
         f"Memory: {memory_path}",
         "",
     ]
+    active_preferences = pipeline.get("activePreferences") or {}
+    preference_lines = summarize_preference_profile(active_preferences)
+    if preference_lines:
+        lines.extend(["## Active Preferences", ""])
+        lines.extend([f"- {line}" for line in preference_lines])
+        lines.append("")
     if result.get("errors"):
         lines.extend(["## Provider Errors", ""])
         for item in result["errors"]:
@@ -185,6 +192,7 @@ def build_json_result(result: dict[str, Any], memory_path: str) -> str:
         "effectiveRounds": result["pipeline"].get("effectiveRounds"),
         "memoryScope": result["pipeline"].get("memoryScope"),
         "topicProfile": result["pipeline"].get("topicProfile"),
+        "activePreferences": result["pipeline"].get("activePreferences"),
         "feedbackStrategy": result["pipeline"].get("feedbackStrategy"),
         "errors": [{"provider": item["provider"], "message": str(item["error"])} for item in result.get("errors", [])],
         "topPapers": [hit["paper"] for hit in result.get("rankedHits", [])[:5]],

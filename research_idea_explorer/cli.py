@@ -15,16 +15,22 @@ from .memory import (
     create_memory_graph,
     format_graph_ideas_markdown,
     format_graph_neighborhood_markdown,
+    format_preference_profiles_markdown,
+    get_preference_profile,
     format_graph_summary_markdown,
     get_graph_neighborhood,
     list_graph_ideas,
+    list_preference_profiles,
     load_memory_graph,
+    remember_preference_profile,
     record_idea_decision,
     save_memory_graph,
     summarize_memory_graph,
 )
+from .preferences import create_preference_profile, extract_preferences_from_notes, has_preference_signal, merge_preference_profiles
 from .presentation import build_json_result, format_ideas_markdown
 from .providers import search_literature_sources
+from .schema import build_topic_profile
 
 
 def _pick_memory_path(memory: str | None) -> str:
@@ -57,12 +63,81 @@ def _write_output(output_path: str | None, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
+def _preferences_from_args(args: argparse.Namespace, *, include_feedback_note: bool = False) -> dict[str, Any]:
+    note_preferences = extract_preferences_from_notes(
+        [
+            *(getattr(args, "preference_note", None) or []),
+            *(([args.note] if include_feedback_note and getattr(args, "note", None) else [])),
+        ]
+    )
+    explicit_profile = create_preference_profile(
+        {
+            "preferredPuzzles": getattr(args, "preferred_puzzle", None) or [],
+            "preferredClaims": getattr(args, "preferred_claim", None) or [],
+            "evidenceKinds": getattr(args, "evidence_kind", None) or [],
+            "personaIds": getattr(args, "persona", None) or [],
+            "keywords": getattr(args, "keyword", None) or [],
+            "stakes": getattr(args, "stake", None) or [],
+            "avoidPuzzles": getattr(args, "avoid_puzzle", None) or [],
+            "avoidClaims": getattr(args, "avoid_claim", None) or [],
+            "avoidEvidenceKinds": getattr(args, "avoid_evidence_kind", None) or [],
+            "avoidPersonaIds": getattr(args, "avoid_persona", None) or [],
+            "avoidKeywords": getattr(args, "avoid_keyword", None) or [],
+            "notes": getattr(args, "preference_note", None) or [],
+        }
+    )
+    return merge_preference_profiles(note_preferences, explicit_profile)
+
+
+def _topic_profile_from_feedback(graph: dict[str, Any], args: argparse.Namespace) -> dict[str, Any] | None:
+    explicit_topic = build_topic_profile(
+        {
+            "query": args.topic or "",
+            "domain": args.domain,
+            "constraints": {"keywords": getattr(args, "keyword", None) or []},
+        }
+    )
+    if explicit_topic.get("tokens"):
+        return explicit_topic
+    if not args.idea_id:
+        return None
+    node = graph.get("nodes", {}).get(f"idea:{args.idea_id}")
+    if not isinstance(node, dict):
+        return None
+    payload = node.get("payload") if isinstance(node.get("payload"), dict) else {}
+    inferred_topic = build_topic_profile(payload.get("topicProfile") or payload)
+    return inferred_topic if inferred_topic.get("tokens") else None
+
+
 def run_ideas_command(args: argparse.Namespace) -> str:
     query = args.query or " ".join(args.text or []).strip()
     if not query:
         raise SystemExit('Missing query. Pass --query "..." or provide positional text.')
     memory_path = _pick_memory_path(args.memory)
     memory_graph = load_memory_graph(memory_path) if Path(memory_path).exists() else create_memory_graph()
+    current_preferences = _preferences_from_args(args)
+    topic_profile = build_topic_profile(
+        {
+            "query": query,
+            "domain": args.domain,
+            "constraints": {"keywords": current_preferences.get("keywords", [])},
+        }
+    )
+    stored_preferences = get_preference_profile(
+        memory_graph,
+        scope=args.memory_scope or "topic",
+        topic_profile=topic_profile,
+        threshold=args.memory_topic_threshold,
+    )
+    active_preferences = merge_preference_profiles(stored_preferences, current_preferences)
+    if args.remember_preferences and has_preference_signal(current_preferences):
+        active_preferences = remember_preference_profile(
+            memory_graph,
+            current_preferences,
+            scope=args.remember_preferences,
+            topic_profile=topic_profile,
+            threshold=args.memory_topic_threshold,
+        )
     providers = _normalize_providers(args)
     result = search_literature_sources(
         query,
@@ -81,9 +156,9 @@ def run_ideas_command(args: argparse.Namespace) -> str:
             "springerApiKey": args.springer_api_key,
         },
     )
-    seed = build_query_seed(query, result, domain=args.domain)
+    seed = build_query_seed(query, result, domain=args.domain, preferences=active_preferences)
     pipeline = run_idea_pipeline(
-        seed,
+        {**seed, "activePreferences": active_preferences},
         result["index"],
         frontier_limit=args.frontier_limit,
         memory_scope=args.memory_scope or "topic",
@@ -103,7 +178,21 @@ def run_ideas_command(args: argparse.Namespace) -> str:
 def run_feedback_command(args: argparse.Namespace) -> str:
     memory_path = _pick_memory_path(args.memory)
     graph = load_memory_graph(memory_path)
+    preferences_updated = False
+    if args.remember_preferences:
+        topic_profile = _topic_profile_from_feedback(graph, args)
+        preferences = _preferences_from_args(args, include_feedback_note=True)
+        if has_preference_signal(preferences):
+            remember_preference_profile(
+                graph,
+                preferences,
+                scope=args.remember_preferences,
+                topic_profile=topic_profile,
+            )
+            preferences_updated = True
     if not args.idea_id:
+        if preferences_updated:
+            save_memory_graph(memory_path, graph)
         ideas = [
             {
                 "id": node.get("payload", {}).get("id") or node["id"].removeprefix("idea:"),
@@ -135,8 +224,11 @@ def run_graph_command(args: argparse.Namespace) -> str:
         output = json.dumps({"memoryPath": memory_path, "neighborhood": neighborhood}, indent=2) if args.format == "json" else format_graph_neighborhood_markdown(neighborhood)
     elif view == "json":
         output = json.dumps({"memoryPath": memory_path, "graph": graph}, indent=2)
+    elif view == "preferences":
+        profiles = list_preference_profiles(graph)
+        output = json.dumps({"memoryPath": memory_path, "preferences": profiles}, indent=2) if args.format == "json" else format_preference_profiles_markdown(profiles)
     else:
-        raise SystemExit(f"Unknown graph view: {view}. Supported views: summary, ideas, neighbors, json.")
+        raise SystemExit(f"Unknown graph view: {view}. Supported views: summary, ideas, neighbors, preferences, json.")
     _write_output(args.output, output)
     return f"{output}\n"
 
@@ -194,12 +286,40 @@ def build_parser() -> argparse.ArgumentParser:
     ideas.add_argument("--rounds", type=int)
     ideas.add_argument("--format")
     ideas.add_argument("--output")
+    ideas.add_argument("--preference-note", action="append")
+    ideas.add_argument("--preferred-puzzle", action="append")
+    ideas.add_argument("--preferred-claim", action="append")
+    ideas.add_argument("--evidence-kind", action="append")
+    ideas.add_argument("--persona", action="append")
+    ideas.add_argument("--keyword", action="append")
+    ideas.add_argument("--stake", action="append")
+    ideas.add_argument("--avoid-puzzle", action="append")
+    ideas.add_argument("--avoid-claim", action="append")
+    ideas.add_argument("--avoid-evidence-kind", action="append")
+    ideas.add_argument("--avoid-persona", action="append")
+    ideas.add_argument("--avoid-keyword", action="append")
+    ideas.add_argument("--remember-preferences", choices=["topic", "global"])
 
     feedback = subparsers.add_parser("feedback")
     feedback.add_argument("--memory")
     feedback.add_argument("--idea-id")
     feedback.add_argument("--decision", default="accepted")
     feedback.add_argument("--note")
+    feedback.add_argument("--preference-note", action="append")
+    feedback.add_argument("--preferred-puzzle", action="append")
+    feedback.add_argument("--preferred-claim", action="append")
+    feedback.add_argument("--evidence-kind", action="append")
+    feedback.add_argument("--persona", action="append")
+    feedback.add_argument("--keyword", action="append")
+    feedback.add_argument("--stake", action="append")
+    feedback.add_argument("--avoid-puzzle", action="append")
+    feedback.add_argument("--avoid-claim", action="append")
+    feedback.add_argument("--avoid-evidence-kind", action="append")
+    feedback.add_argument("--avoid-persona", action="append")
+    feedback.add_argument("--avoid-keyword", action="append")
+    feedback.add_argument("--remember-preferences", choices=["topic", "global"])
+    feedback.add_argument("--topic")
+    feedback.add_argument("--domain")
 
     graph = subparsers.add_parser("graph")
     graph.add_argument("--memory")
