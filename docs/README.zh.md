@@ -3,44 +3,38 @@
 [![中文](https://img.shields.io/badge/说明-中文-0F766E)](./README.zh.md)
 [![English](https://img.shields.io/badge/Docs-English-1F2937)](./README.en.md)
 
-## 项目简介
+## 项目定位
 
-`Research Idea Explorer` 是一个面向研究想题与选题推进的工具。  
-它把“查文献、发散、聚焦、继续推进”放进同一条工作流里，并在需要时升级成两轮深挖，让研究生成不再依赖一次性 prompt。
+`Research Idea Explorer` 是一个 Python 研究想题 backend，主要给 `Codex CLI` 和 `Claude Code` 使用。
 
-它既可以直接作为本地 `CLI` 使用，也可以接到 `Codex` 或 `Claude Code` 这样的 agent CLI 工作流中。
+它负责：
+
+- 检索文献
+- 建立 literature map
+- 从多种 research moves 发散
+- 收束成结构化 research cards
+- 记录 accept / reject 到 memory graph
+
+它不要求用户直接理解内部 pipeline。用户通常只会在 `Codex` 或 `Claude Code` 里提出需求，backend 在背后执行。
 
 ## 适合什么场景
 
 - 你有一个主题，想快速得到一轮有文献依据的研究方向
-- 你想避免只得到“方法 + 对象”的浅层拼接
-- 你已经有本地文献库，想在已有基础上继续推进
-- 你想把接受/拒绝过的方向记下来，避免每轮从零开始
+- 你不想只得到“方法 + 主题”的浅层拼接
+- 你已经有本地文献库，想继续推进
+- 你想保留 accept / reject 历史，避免每轮从零开始
 
 ## 工作流
 
 1. 检索公开文献或读取本地文献库
-2. 先做一轮 literature map，找文献簇和相邻 neighborhood
-3. 用几种正交的问题结构做默认单轮发散，再收束成小 frontier
-4. 只有在用户要求深挖或沿 accepted 方向继续推进时，才做第二轮文献 mutation
-5. 用重复检测、文献重叠和 memory graph 做最终筛选
-6. 通过 accept / reject 继续探索下一轮
+2. 建立一轮 literature map 和邻近文献 neighborhood
+3. 从多种 research moves 发散，再收束成 frontier
+4. 用重复检测、重叠检查和 memory 信号做筛选
+5. 通过 accept / reject 继续下一轮
+6. 只有在要求深挖或沿 accepted 方向继续时，才做第二轮 mutation
 
-使用原则：
-除了 `graph`、`feedback`、输出说明这类纯功能调用外，研究生成相关调用默认先检索文献。
-
-## 核心能力
-
-- `Scholar Scout`：文献检索与 grounding
-- `Research Moves`：做默认单轮发散，并在需要时升级成 second-pass branching
-- `Idea Forge`：把搜索结果收束成简洁 research cards
-- `Crowd Guard`：过滤近重复和拥挤方向
-- `Frontier Graph`：记录 query、paper、idea 与相关线索的关系
-- `Feedback Loop`：将用户反馈回写到 memory graph
-
-默认情况下，memory continuation 会按 topic scope 隔离，所以不同题目可以共用一个 memory 文件而不继承彼此的 accept/reject 历史。只有你明确想跨题目迁移经验时，才建议用 `--memory-scope global`。
-
-如果某个 topic 连续被 reject，且还没有形成 accepted 方向，系统会自动切到 lateral reset：扩大文献探测范围、优先换 contrast 或 family，并降低“把 scope 缩得更小”这类本能反应。
+默认原则：
+除了 `graph`、`feedback`、输出格式说明这类纯工具调用外，研究生成相关请求默认先检索文献。
 
 ## 输出内容
 
@@ -67,38 +61,45 @@ memory graph 支持这些检查视图：
 - `NBER`
 - `Europe PMC`
 - `bioRxiv / medRxiv`
-- `SSRN`（直链 metadata 模式）
-- `ScienceDirect`（需要 key）
-- `Springer Nature`（需要 key）
+- `SSRN`
+- `ScienceDirect`
+- `Springer Nature`
 - `web metadata`
 - `Zotero`
 - `local JSON / CSL-JSON / BibTeX`
+
+## 安装方式
+
+推荐用户安装：
+
+```bash
+pipx install git+https://github.com/jameslemon2002/research-idea-explorer.git
+```
+
+备选：
+
+```bash
+python3 -m pip install --user git+https://github.com/jameslemon2002/research-idea-explorer.git
+```
+
+要求：
+
+- `Python 3.9+`
+- 不需要 `Node.js`
+- 不需要 `npm`
+
+## 常用命令
+
+```bash
+research-idea-explorer ideas --query "urban heat planning"
+research-idea-explorer graph --memory ./data/memory/cli-memory.json
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json
+```
 
 ## 先看这里
 
 - [中文快速上手](./quickstart.zh.md)
 - [双语功能总览](./feature-guide.zh-en.md)
+- [开发说明](./dev.md)
 - [更新历史](../CHANGELOG.md)
 - [项目首页](../README.md)
-
-## 一条最短命令
-
-本地 CLI 只需要 `Node.js 18+`，不需要 `npm install`，也不支持 `pip install`。
-
-```bash
-node src/cli.js ideas --query "urban heat planning"
-```
-
-如果你想让别的用户也能装成机器级命令，可以在仓库根目录执行：
-
-```bash
-npm install -g .
-research-idea-explorer install codex-skill
-```
-
-## Codex / Skill 示例
-
-```text
-用 $research-idea-explorer 围绕 “urban heat adaptation” 生成一轮研究方向。
-先检索相关文献，先给我一轮强一点的 frontier；如果里面有值得继续的方向，再沿相邻文献做第二轮深挖。
-```

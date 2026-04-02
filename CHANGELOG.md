@@ -11,6 +11,15 @@ Rule going forward:
 
 - Reserve this section for the next major milestone before it ships.
 
+## 2026-04-02 · Python Backend Refactor
+
+Highlights:
+- Rebuilt the runtime as a Python package with console entry points `research-idea-explorer` and `rie`.
+- Migrated the CLI surface, pipeline, memory graph, literature retrieval, and installer flows from the previous Node implementation.
+- Switched user-facing installation guidance to Python-first packaging instead of repo-local Node execution.
+- Added Python test coverage for pipeline behavior, CLI output, and Codex / Claude surface installation.
+- Reframed the docs so `Codex CLI` and `Claude Code` are the primary user entry points and the backend is the packaged Python command.
+
 ## 2026-03-27 · Lateral Reset Under Repeated Rejection
 
 Commits:

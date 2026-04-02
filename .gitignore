@@ -2,3 +2,9 @@ node_modules/
 .DS_Store
 .Rhistory
 data/memory/
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.egg-info/

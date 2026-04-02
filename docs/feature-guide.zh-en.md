@@ -3,6 +3,7 @@
 中文在前，English follows below.
 
 快速入口：
+
 - [项目首页](../README.md)
 - [中文快速上手](./quickstart.zh.md)
 - [English Quick Start](./quickstart.en.md)
@@ -11,57 +12,25 @@
 
 ### 这是什么
 
-`Research Idea Explorer` 不是一个“帮你随便想几个题目”的 prompt 模板，而是一条更稳定的研究生成主线：
+`Research Idea Explorer` 是给 `Codex CLI` 和 `Claude Code` 提供研究想题能力的 Python backend。
 
-1. 先检索文献或读取用户已有文献库
-2. 先做一轮 literature map，找文献簇和相邻 neighborhood
-3. 默认只做一轮发散与聚焦，先给出强一点的 frontier
-4. 只有在用户要求深挖或沿 accepted 方向继续推进时，再做第二轮文献 branching
-5. 用重复检测、文献重叠、memory graph 做筛选
-6. 让用户 accept / reject，再继续往新的 research neighborhood 推进
+它不是单次 prompt，而是一条稳定的主线：
 
-### 主线流程
+1. 先检索文献
+2. 再建立 literature map
+3. 再从多个 research moves 发散
+4. 再收束成结构化 research cards
+5. 再通过 feedback 和 memory graph 继续推进
 
-使用原则：
-除了 `graph / feedback / 输出解释` 这类纯功能调用外，研究生成、继续推进、比较候选、red-team 等调用默认先检索文献，再进入脑暴和筛选。
+### 核心模块
 
-#### 主线 A：最常用
-
-适合“我有一个研究主题，想快速发散并落地”。
-
-1. 用户给主题
-2. 系统检索公开文献或本地文献库
-3. 系统建立一轮 literature map
-4. 系统输出 research moves 和 frontier idea cards
-5. 用户选择保留、拒绝、继续推进
-
-#### 主线 B：带文献约束
-
-适合“我不想撞题，也不想脱离真实文献空间”。
-
-1. 用户指定文献源
-2. 系统做 metadata 检索
-3. 系统识别 crowded areas
-4. 系统先给单轮 frontier，需要时再沿相邻但未充分展开的方向做第二轮 branching
-5. 用户用 feedback 更新 memory graph
-
-#### 主线 C：带个人文献库
-
-适合“我已经有 Zotero / BibTeX / JSON 文库”。
-
-1. 用户提供本地库或 Zotero
-2. 系统优先参考用户自己的 literature neighborhood
-3. 系统避免和已有收藏高度重合
-4. 用户反复 accept / reject，形成长期探索记忆
-
-### 功能地图
-
-#### 1. `Scholar Scout` 文献雷达
+#### 1. `Scholar Scout`
 
 作用：
-先看真实文献，再想题，避免直接空想。
+先看真实文献，再生成方向。
 
 支持：
+
 - `OpenAlex`
 - `Crossref`
 - `arXiv`
@@ -69,89 +38,60 @@
 - `NBER`
 - `Europe PMC`
 - `bioRxiv / medRxiv`
-- `SSRN`（直链 metadata 模式）
-- `ScienceDirect`（需要 key）
-- `Springer Nature`（需要 key）
+- `SSRN`
+- `ScienceDirect`
+- `Springer Nature`
 - `web metadata`
 - `Zotero`
 - `local JSON / CSL-JSON / BibTeX`
 
-用户可以怎么说：
-- “先检索相关文献，再生成 idea。”
-- “优先用 arXiv、OpenAlex、Crossref。”
-- “先检索 Europe PMC、bioRxiv、medRxiv。”
-- “这是经济学 / 金融 / 商科主题，先把 NBER working papers 带上。”
-- “先参考我的本地 BibTeX 文库。”
-- “我有一篇 SSRN 预印本链接，先把它纳入参考。”
-
-CLI 例子：
+例子：
 
 ```bash
-node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+research-idea-explorer ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
 ```
 
 ```bash
-node src/cli.js ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
+research-idea-explorer ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
 ```
 
 ```bash
-node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib
+research-idea-explorer ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib
 ```
 
-```bash
-node src/cli.js ideas --query "corporate finance productivity" --providers nber
-```
-
-```bash
-node src/cli.js ideas --query "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=123456" --providers ssrn
-```
-
-#### 1.1 `Mode Switch` 检索模式切换
+#### 2. `Mode Switch`
 
 作用：
-控制文献重排时更偏词面匹配、语义相似，还是图邻域扩展。
+控制检索更偏关键词、语义相似还是图邻域扩展。
 
-支持的模式：
-- `lexical`：关键词/title/abstract 直接匹配
-- `embedding`：基于本地 embedding 的语义相似检索
-- `graph`：基于相似图的邻域扩展
-- `hybrid`：综合 lexical + embedding + graph，默认模式
+支持模式：
 
-用户可以怎么说：
-- “优先语义相似，不要只看关键词。”
-- “沿相邻文献邻域扩展，不要只返回最相近论文。”
-- “用 hybrid 检索，兼顾 precision 和 exploration。”
+- `lexical`
+- `embedding`
+- `graph`
+- `hybrid`
 
-CLI 例子：
+例子：
 
 ```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy lexical
+research-idea-explorer ideas --query "climate adaptation equity" --search-strategy lexical
 ```
 
 ```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy embedding
+research-idea-explorer ideas --query "climate adaptation equity" --search-strategy embedding
 ```
 
 ```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy graph
+research-idea-explorer ideas --query "climate adaptation equity" --search-strategy graph
 ```
 
-```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy hybrid
-```
-
-触发规则：
-- 不显式指定时，CLI 默认走 `hybrid`
-- 用户自然语言里如果强调“语义相似”“不是关键词匹配”，更适合映射到 `embedding`
-- 如果强调“相邻文献群”“邻域扩展”“不要只看最近论文”，更适合映射到 `graph`
-- 如果只是泛泛说“先检索文献”，通常保持 `hybrid` 最稳
-
-#### 2. `Research Moves` 研究发散
+#### 3. `Research Moves`
 
 作用：
-不是一句“你要有创意”，而是从不同问题结构切入。
+不是直接拼题目，而是从多种问题结构发散。
 
-内部会用一组彼此正交的研究 move 保持发散质量：
+内部会保持几条正交视角：
+
 - `Anomaly Hunter`
 - `Assumption Breaker`
 - `Measurement Skeptic`
@@ -159,264 +99,102 @@ node src/cli.js ideas --query "climate adaptation equity" --search-strategy hybr
 - `Boundary Mapper`
 - `Analogy Transfer`
 
-用户可以怎么说：
-- “先给我 6 个来自不同 research moves 的 brainstorm seeds。”
-- “不要直接给标题，先做一轮发散。”
-- “优先反常识、失败、边界、测量扭曲。”
-
-触发信号：
-- “brainstorm”
-- “不同切入角度”
-- “先发散再收束”
-
-#### 3. `Idea Forge` 结构化成题
+#### 4. `Idea Forge`
 
 作用：
-把 loose brainstorm 变成可研究的 idea card。
+把发散结果收束成用户真正能判断的 research cards。
 
-默认展示卡的核心字段：
+默认卡面：
+
 - `Title`
 - `Abstract`
 - `Design`
 - `Distinctiveness`
 - `Significance`
 
-说明：
-- 内部 schema 仍然保留 `Object / Puzzle / Claim / Contrast / Evidence / Scope / Stakes`
-- 但默认用户可见卡面被压缩成上面这 5 项，减少表单感
-
-用户可以怎么说：
-- “把最强的 4 个 seed 收束成 structured idea cards。”
-- “不要只给题目，要给短摘要和设计。”
-- “每个 idea 都要说明它的新意和重要性。”
-
-#### 4. `Crowd Guard` 拥挤区过滤
+#### 5. `Frontier Graph`
 
 作用：
-压掉“方法 + 主题”拼接、近重复、文献中太拥挤的方向。
+记录 query、paper、idea 和相邻关系，避免每轮重复探索。
 
-用户可以怎么说：
-- “不要只是 AI + X 拼接。”
-- “避开高频方向。”
-- “先判断 crowded areas，再生成 frontier ideas。”
+默认 continuation 按 topic scope 隔离：
 
-触发信号：
-- “avoid duplicates”
-- “不要撞题”
-- “不要换皮”
+- 相近题目会延续
+- 不同题目不会互相污染
+- 只有明确想共享时才用 `--memory-scope global`
 
-#### 5. `Frontier Graph` 前沿图谱
+常用视图：
+
+```bash
+research-idea-explorer graph --memory ./data/memory/cli-memory.json
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view ideas
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+```
+
+#### 6. `Feedback Loop`
 
 作用：
-把 ideas、papers、queries 和相关线索放进同一 memory graph，避免每轮都从零开始。
+让 accept / reject 进入 memory graph，影响下一轮。
 
-默认情况下，continuation 会按 topic scope 过滤 memory：
-- 相近题目会互相延续
-- 不同题目共用同一个 memory 文件时不会互相污染
-- 如果你明确要跨题目共享 history，可以用 `--memory-scope global`
-
-graph 会记录：
-- query
-- paper
-- idea
-- internal move provenance
-- `retrieved / generated / proposed / nearest_literature / similar_to`
-
-用户可以怎么说：
-- “不要回到我们已经访问过的方向。”
-- “沿新的 research neighborhood 继续推。”
-- “保留上轮 accepted 的方向，但不要只做近义改写。”
-
-CLI 图视图：
-- `summary`：整体统计
-- `ideas`：最近的 idea 节点
-- `neighbors`：某个 idea / node 的局部邻域
-
-CLI 例子：
+例子：
 
 ```bash
-node src/cli.js graph --memory ./data/memory/cli-memory.json --view ideas
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json
 ```
 
 ```bash
-node src/cli.js graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
-#### 6. `Feedback Loop` 反馈回路
+如果同一 topic 连续被 reject，且还没有 accepted 方向，系统会自动进入 lateral reset：
 
-作用：
-让用户显式 accept / reject idea，系统之后据此继续推进。
+- 扩大 literature map
+- 优先换 contrast 或 family
+- 避免只是继续缩 scope
 
-用户可以怎么说：
-- “把第 2 个 idea 视为 accepted。”
-- “其余都先 reject。”
-- “基于刚才接受的方向继续推。”
+### 安装与接入
 
-CLI 例子：
+安装：
 
 ```bash
-node src/cli.js feedback --memory ./data/memory/cli-memory.json
+pipx install git+https://github.com/jameslemon2002/research-idea-explorer.git
 ```
+
+接入 `Codex`：
 
 ```bash
-node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
+research-idea-explorer install codex-skill
 ```
 
-### 用户怎么说，系统会触发什么
-
-| 用户意图 | 推荐说法 | 会触发的主功能 |
-|---|---|---|
-| 先看文献再想题 | “先检索相关文献，再生成 idea。” | `Scholar Scout` |
-| 指定 arXiv / 生医库 | “优先 arXiv” / “先检索 Europe PMC、bioRxiv、medRxiv” | `Scholar Scout` |
-| 指定经管 working papers | “这是经济学/金融问题，优先 NBER。” | `Scholar Scout` |
-| 强调语义相似检索 | “优先语义相似，不要只看关键词。” | `Scholar Scout` + `Mode Switch (embedding)` |
-| 强调邻域扩展 | “沿相邻文献群继续扩展。” | `Scholar Scout` + `Mode Switch (graph)` |
-| 先发散后收束 | “先做 brainstorm，再出 idea cards。” | `Research Moves` + `Idea Forge` |
-| 避免套路和撞题 | “不要只做方法+对象拼接，避开 crowded areas。” | `Crowd Guard` |
-| 基于上轮继续 | “不要重复刚才的方向，往新 neighborhood 扩展。” | `Frontier Graph` |
-| 接受/拒绝候选 | “把第 1 个 idea 当 accepted。” | `Feedback Loop` |
-
-### 在 Codex 里怎么说
-
-重启 Codex 后，可以这样用：
-
-```text
-用 $research-idea-explorer 围绕 “urban heat adaptation” 做一轮研究 idea 生成。
-先检索相关文献，再给 6 个 brainstorm seeds，
-最后收束成 4 张 structured idea cards。
-```
-
-```text
-用 $research-idea-explorer。
-优先用 arXiv、OpenAlex、Crossref 检索。
-不要只给标题，要给 minimal design 和去重说明。
-```
-
-```text
-继续用 $research-idea-explorer。
-把刚才第 2 个 idea 视为 accepted，
-不要回到已经访问过的方向，
-请往新的 research neighborhood 推进。
-```
-
-### 在 CLI 里怎么跑
-
-CLI 是 `Node.js` 脚本。
-在仓库根目录直接执行 `node src/cli.js ...` 即可，不需要 `npm install`，也不是 `pip install` 包。
-
-#### 公共文献源
+接入 `Claude Code`：
 
 ```bash
-node src/cli.js ideas --query "urban heat planning"
+research-idea-explorer install claude-command --project /path/to/your-project
 ```
-
-#### 明确指定 provider
-
-```bash
-node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
-```
-
-```bash
-node src/cli.js ideas --query "corporate finance productivity" --providers nber
-```
-
-#### 明确指定检索模式
-
-```bash
-node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref --search-strategy embedding
-```
-
-```bash
-node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref --search-strategy graph
-```
-
-#### 生医方向
-
-```bash
-node src/cli.js ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
-```
-
-#### 本地文献库
-
-```bash
-node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib --format json
-```
-
-#### 反馈
-
-```bash
-node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted
-```
-
-### 推荐使用方式
-
-最推荐的不是 UI，而是：
-- `Codex skill`
-- `CLI`
-- `本地文献库 + memory graph`
-
-原因：
-- 这版最强的是 engine，不是界面
-- 用户真正关键的是“怎么说”和“怎么迭代”
-- skill 和 CLI 已经能覆盖这两件事
-
----
 
 ## English
 
-### What This Project Is
+### What it is
 
-`Research Idea Explorer` is not a one-shot prompt template. It is a more stable research-generation pipeline:
+`Research Idea Explorer` is a Python backend that gives `Codex CLI` and `Claude Code` a literature-grounded research ideation workflow.
 
-1. retrieve literature or load the user's own library
-2. build a literature map and adjacent neighborhoods
-3. run a strong default single-pass divergence and focus loop
-4. only branch into a second literature-guided round when the user asks for depth or continues from an accepted direction
-5. filter with deduplication, literature overlap, and memory graph signals
-6. let the user accept / reject directions and continue into new research neighborhoods
+It is not a one-shot prompt. The default path is:
 
-### Main Workflows
+1. retrieve literature
+2. build a literature map
+3. diverge across multiple research moves
+4. focus into structured research cards
+5. continue through feedback and memory
 
-Usage principle:
-except for pure utility actions such as `graph`, `feedback`, or output-explanation requests, generation, continuation, comparison, and red-team style calls should search literature first before brainstorming and ranking.
-
-#### Flow A: Default
-
-Best for “I have a topic and want fast but grounded divergence.”
-
-1. User provides a topic
-2. System retrieves public or local literature
-3. System builds a first literature map
-4. System outputs research moves and frontier idea cards
-5. User keeps, rejects, or extends directions
-
-#### Flow B: Literature-Constrained Generation
-
-Best for “I do not want rediscovery and I want proximity to real literature.”
-
-1. User specifies literature sources
-2. System retrieves metadata
-3. System detects crowded areas
-4. System first produces a single-pass frontier, then branches into adjacent but underexplored regions only when needed
-5. User updates the memory graph through feedback
-
-#### Flow C: Personal Library First
-
-Best for “I already have Zotero / BibTeX / JSON collections.”
-
-1. User provides a local library or Zotero source
-2. System prioritizes the user's own literature neighborhood
-3. System avoids high overlap with the existing collection
-4. User iterates with accept / reject decisions
-
-### Feature Map
+### Core modules
 
 #### 1. `Scholar Scout`
 
 Purpose:
-Search literature before generating ideas.
+retrieve real literature before generating directions.
 
-Supports:
+Supported sources:
+
 - `OpenAlex`
 - `Crossref`
 - `arXiv`
@@ -424,67 +202,60 @@ Supports:
 - `NBER`
 - `Europe PMC`
 - `bioRxiv / medRxiv`
-- `SSRN` (direct-URL metadata mode)
-- `ScienceDirect` (key required)
-- `Springer Nature` (key required)
+- `SSRN`
+- `ScienceDirect`
+- `Springer Nature`
 - `web metadata`
 - `Zotero`
 - `local JSON / CSL-JSON / BibTeX`
 
-How users can ask:
-- “Search relevant literature before generating ideas.”
-- “Prioritize arXiv, OpenAlex, and Crossref.”
-- “Search Europe PMC, bioRxiv, and medRxiv first.”
-- “This is an economics, finance, or business topic. Include NBER working papers.”
-- “Use my local BibTeX library first.”
-- “I have an SSRN preprint URL. Include it before generating ideas.”
+Examples:
 
-#### 1.1 `Mode Switch`
+```bash
+research-idea-explorer ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+```
+
+```bash
+research-idea-explorer ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
+```
+
+```bash
+research-idea-explorer ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib
+```
+
+#### 2. `Mode Switch`
 
 Purpose:
-Control whether retrieval prefers exact lexical overlap, semantic similarity, or graph-neighborhood expansion.
+control whether retrieval leans lexical, semantic, graph-based, or hybrid.
 
-Supported modes:
+Modes:
+
 - `lexical`
 - `embedding`
 - `graph`
-- `hybrid` (default)
+- `hybrid`
 
-How users can ask:
-- “Prefer semantic similarity, not just keyword overlap.”
-- “Expand through adjacent literature neighborhoods.”
-- “Use hybrid retrieval.”
-
-CLI examples:
+Examples:
 
 ```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy lexical
+research-idea-explorer ideas --query "climate adaptation equity" --search-strategy lexical
 ```
 
 ```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy embedding
+research-idea-explorer ideas --query "climate adaptation equity" --search-strategy embedding
 ```
 
 ```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy graph
+research-idea-explorer ideas --query "climate adaptation equity" --search-strategy graph
 ```
 
-```bash
-node src/cli.js ideas --query "climate adaptation equity" --search-strategy hybrid
-```
-
-Trigger rules:
-- if unspecified, the CLI defaults to `hybrid`
-- requests that emphasize semantic recall map best to `embedding`
-- requests that emphasize neighborhood exploration or adjacent clusters map best to `graph`
-- general “search literature first” requests should usually stay on `hybrid`
-
-#### 2. `Research Moves`
+#### 3. `Research Moves`
 
 Purpose:
-Drive divergence through different problem-attack styles instead of generic “be creative.”
+explore multiple problem framings instead of producing thin topic combinations.
 
-Internally the system uses a set of orthogonal research moves:
+Internal move set:
+
 - `Anomaly Hunter`
 - `Assumption Breaker`
 - `Measurement Skeptic`
@@ -492,162 +263,75 @@ Internally the system uses a set of orthogonal research moves:
 - `Boundary Mapper`
 - `Analogy Transfer`
 
-How users can ask:
-- “Give me six brainstorm seeds from different research moves first.”
-- “Do a divergence pass before producing idea cards.”
-- “Prioritize anomaly, failure, boundary, and measurement moves.”
-
-#### 3. `Idea Forge`
+#### 4. `Idea Forge`
 
 Purpose:
-Turn loose seeds into researchable idea cards.
+compress loose exploration into user-facing research cards.
 
 Default card fields:
+
 - `Title`
 - `Abstract`
 - `Design`
 - `Distinctiveness`
 - `Significance`
 
-Note:
-- the internal schema still keeps `Object / Puzzle / Claim / Contrast / Evidence / Scope / Stakes`
-- but the default user-facing card is compressed into the five fields above so it reads like a research card rather than a form
-
-How users can ask:
-- “Crystallize the strongest four seeds into structured idea cards.”
-- “Do not stop at titles; include a short abstract and design.”
-- “Explain each idea's distinctiveness and significance.”
-
-#### 4. `Crowd Guard`
-
-Purpose:
-Filter shallow method-topic pairings, near-duplicates, and crowded literature directions.
-
-How users can ask:
-- “Do not give me thin method-plus-topic combinations.”
-- “Avoid crowded directions.”
-- “Identify crowded areas before proposing frontier ideas.”
-
 #### 5. `Frontier Graph`
 
 Purpose:
-Keep queries, papers, ideas, and related links in one persistent graph so each round does not restart from zero.
+store queries, papers, ideas, and related links so later rounds do not restart from zero.
 
-By default, continuation is filtered by topic scope:
+By default, continuation is topic-scoped:
+
 - nearby topics can continue from each other
-- unrelated topics in one shared memory file do not cross-contaminate
-- use `--memory-scope global` only when you explicitly want one global history
+- unrelated topics do not cross-contaminate
+- use `--memory-scope global` only when you explicitly want shared history
 
-How users can ask:
-- “Do not return to directions we already explored.”
-- “Push into a new research neighborhood.”
-- “Keep the accepted direction but avoid near-paraphrases.”
-
-CLI graph views:
-- `summary`: overall counts
-- `ideas`: recent idea nodes
-- `neighbors`: the local neighborhood around an idea or node
-
-CLI examples:
+Common views:
 
 ```bash
-node src/cli.js graph --memory ./data/memory/cli-memory.json --view ideas
-```
-
-```bash
-node src/cli.js graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
+research-idea-explorer graph --memory ./data/memory/cli-memory.json
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view ideas
+research-idea-explorer graph --memory ./data/memory/cli-memory.json --view neighbors --idea-id <idea-id>
 ```
 
 #### 6. `Feedback Loop`
 
 Purpose:
-Let the user explicitly accept or reject ideas and use that signal in later rounds.
+write accept / reject decisions back into the memory graph and change later continuation.
 
-How users can ask:
-- “Treat idea 2 as accepted.”
-- “Reject the others for now.”
-- “Continue from the accepted direction.”
-
-### User Intent to Feature Mapping
-
-| User intent | Recommended wording | Main feature triggered |
-|---|---|---|
-| Literature first | “Search literature before generating ideas.” | `Scholar Scout` |
-| Explicit sources | “Prioritize arXiv” / “Search Europe PMC, bioRxiv, medRxiv first” | `Scholar Scout` |
-| Economics working papers | “This is an economics or finance topic. Include NBER working papers.” | `Scholar Scout` |
-| Semantic retrieval | “Prefer semantic similarity, not just keyword overlap.” | `Scholar Scout` + `Mode Switch (embedding)` |
-| Neighborhood expansion | “Expand through adjacent literature neighborhoods.” | `Scholar Scout` + `Mode Switch (graph)` |
-| Diverge before structuring | “Brainstorm first, then produce idea cards.” | `Research Moves` + `Idea Forge` |
-| Avoid templates | “Avoid shallow topic-method pairings and crowded areas.” | `Crowd Guard` |
-| Continue from prior rounds | “Do not repeat the previous direction; expand into a new neighborhood.” | `Frontier Graph` |
-| Accept / reject directions | “Treat idea 1 as accepted.” | `Feedback Loop` |
-
-### How To Ask in Codex
-
-After restarting Codex, examples include:
-
-```text
-Use $research-idea-explorer to generate research ideas around “urban heat adaptation”.
-Search relevant literature first, then give me six brainstorm seeds,
-and finally crystallize them into four structured idea cards.
-```
-
-```text
-Use $research-idea-explorer.
-Prioritize arXiv, OpenAlex, and Crossref.
-Do not stop at titles; include minimal design and duplicate checks.
-```
-
-```text
-Continue with $research-idea-explorer.
-Treat the second idea from the previous round as accepted,
-do not revisit explored directions,
-and extend into a new research neighborhood.
-```
-
-### How To Run It in the CLI
-
-The CLI is a `Node.js` script.
-From the repo root, run `node src/cli.js ...` directly. No `npm install` is required for this workflow, and this project is not a `pip install` package.
-
-#### Public literature sources
+Examples:
 
 ```bash
-node src/cli.js ideas --query "urban heat planning"
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json
 ```
-
-#### Explicit provider selection
 
 ```bash
-node src/cli.js ideas --query "large language model reasoning" --providers arxiv,openalex,crossref
+research-idea-explorer feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted --note "strong direction"
 ```
 
-#### Biomedical query
+If repeated rejection still has not produced an accepted direction, the system shifts into a lateral reset:
+
+- broaden the literature map
+- prefer a different contrast or idea family
+- avoid solving the problem by endlessly narrowing scope
+
+### Install and connect
+
+Install:
 
 ```bash
-node src/cli.js ideas --query "single cell disease pathway analysis" --providers europepmc,biorxiv,medrxiv
+pipx install git+https://github.com/jameslemon2002/research-idea-explorer.git
 ```
 
-#### Local library
+Connect to `Codex`:
 
 ```bash
-node src/cli.js ideas --query "urban heat planning" --providers local --local-library-path ./data/library.bib --format json
+research-idea-explorer install codex-skill
 ```
 
-#### Feedback
+Connect to `Claude Code`:
 
 ```bash
-node src/cli.js feedback --memory ./data/memory/cli-memory.json --idea-id <idea-id> --decision accepted
+research-idea-explorer install claude-command --project /path/to/your-project
 ```
-
-### Best Current Surface
-
-Recommended user surfaces:
-- `Codex skill`
-- `CLI`
-- `local library + memory graph`
-
-Reason:
-- the strongest part of the project is the engine, not the UI
-- the most important user action is how they ask and how they iterate
-- the skill and CLI already cover both well

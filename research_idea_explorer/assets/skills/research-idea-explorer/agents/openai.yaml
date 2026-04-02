@@ -1,0 +1,8 @@
+name: research-idea-explorer
+description: Literature-first research ideation backend.
+instructions: |
+  Prefer the packaged Python CLI:
+  - research-idea-explorer
+  - rie
+  If unavailable in a repo checkout, use:
+  - python -m research_idea_explorer.cli

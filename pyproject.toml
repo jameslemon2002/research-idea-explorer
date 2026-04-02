@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "research-idea-explorer"
+version = "0.2.0"
+description = "Literature-grounded research ideation backend for Codex CLI and Claude Code"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+  { name = "James Lemon" }
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "License :: OSI Approved :: MIT License",
+  "Environment :: Console",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Information Analysis"
+]
+
+[project.urls]
+Homepage = "https://github.com/jameslemon2002/research-idea-explorer"
+Repository = "https://github.com/jameslemon2002/research-idea-explorer"
+
+[project.scripts]
+research-idea-explorer = "research_idea_explorer.cli:main"
+rie = "research_idea_explorer.cli:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+research_idea_explorer = [
+  "assets/claude/commands/*.md",
+  "assets/skills/research-idea-explorer/*.md",
+  "assets/skills/research-idea-explorer/agents/*.yaml",
+  "assets/skills/research-idea-explorer/references/*.md"
+]
