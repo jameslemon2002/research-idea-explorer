@@ -5,7 +5,7 @@
 
 ## 项目定位
 
-`Research Idea Explorer` 是一个 Python 研究想题 backend，主要给 `Codex CLI` 和 `Claude Code` 使用。
+`Research Idea Explorer` 是一个研究想题 backend，主要给 `Codex CLI` 和 `Claude Code` 使用。
 
 它负责：
 

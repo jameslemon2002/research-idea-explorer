@@ -5,7 +5,7 @@
 
 ## Positioning
 
-`Research Idea Explorer` is a Python research-ideation backend for `Codex CLI` and `Claude Code`.
+`Research Idea Explorer` is a research-ideation backend for `Codex CLI` and `Claude Code`.
 
 It handles:
 

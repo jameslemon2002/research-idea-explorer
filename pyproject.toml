@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "research-idea-explorer"
 version = "0.2.0"
-description = "Literature-grounded research ideation backend for Codex CLI and Claude Code"
+description = "Research ideation backend for Codex CLI and Claude Code"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }

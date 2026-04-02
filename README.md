@@ -2,12 +2,12 @@
 
 # Research Idea Explorer
 
-### 给 `Codex CLI` 和 `Claude Code` 用的 Python 研究想题后端。
+### 给 `Codex CLI` 和 `Claude Code` 用的研究想题后端。
 
-*A Python backend for literature-grounded research ideation in Codex CLI and Claude Code.*
+*A literature-grounded research ideation backend for Codex CLI and Claude Code.*
 
 ![Status](https://img.shields.io/badge/Status-Release%20Ready-0F766E)
-![Language](https://img.shields.io/badge/Runtime-Python%203.9%2B-1F2937)
+![Install](https://img.shields.io/badge/Install-pipx%20or%20pip-1F2937)
 ![Interface](https://img.shields.io/badge/Interface-Codex%20CLI%20%2B%20Claude%20Code-2563EB)
 ![Storage](https://img.shields.io/badge/Memory-JSON%20Graph-F59E0B)
 

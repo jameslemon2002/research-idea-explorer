@@ -12,7 +12,7 @@
 
 ### 这是什么
 
-`Research Idea Explorer` 是给 `Codex CLI` 和 `Claude Code` 提供研究想题能力的 Python backend。
+`Research Idea Explorer` 是给 `Codex CLI` 和 `Claude Code` 提供研究想题能力的 backend。
 
 它不是单次 prompt，而是一条稳定的主线：
 
@@ -176,7 +176,7 @@ research-idea-explorer install claude-command --project /path/to/your-project
 
 ### What it is
 
-`Research Idea Explorer` is a Python backend that gives `Codex CLI` and `Claude Code` a literature-grounded research ideation workflow.
+`Research Idea Explorer` is a backend that gives `Codex CLI` and `Claude Code` a literature-grounded research ideation workflow.
 
 It is not a one-shot prompt. The default path is:
 
